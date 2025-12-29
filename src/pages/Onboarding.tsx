@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useSubscriptionPlans, useActiveOffers, useCreateSubscription, SubscriptionType } from '@/hooks/useSubscription';
+import { useSubscriptionPlans, useActiveOffers, useCreateSubscription, useHasActiveSubscription, SubscriptionType } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { Check, Loader2, ArrowRight, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
@@ -25,7 +25,8 @@ const signupSchema = z.object({
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { signUp, user, loading: authLoading } = useAuth();
+  const { signUp, signIn, user, loading: authLoading } = useAuth();
+  const { hasActiveSubscription, isLoading: subLoading } = useHasActiveSubscription();
   const { data: plans, isLoading: plansLoading } = useSubscriptionPlans();
   const { data: offers } = useActiveOffers();
   const createSubscription = useCreateSubscription();
@@ -40,12 +41,12 @@ export default function Onboarding() {
     fullName: '',
   });
 
-  // If user is already logged in, redirect to dashboard
+  // If user is already logged in AND has active subscription, redirect to dashboard
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && !subLoading && user && hasActiveSubscription) {
       navigate('/');
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, subLoading, hasActiveSubscription, navigate]);
 
   const getApplicableOffer = (planType: SubscriptionType) => {
     return offers?.find(o => 
@@ -64,7 +65,34 @@ export default function Onboarding() {
 
   const handlePlanSelect = (planType: SubscriptionType) => {
     setSelectedPlan(planType);
-    setStep('register');
+    // If user is already logged in, skip registration and directly create subscription
+    if (user) {
+      handleRenewSubscription(planType);
+    } else {
+      setStep('register');
+    }
+  };
+
+  const handleRenewSubscription = async (planType: SubscriptionType) => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const plan = plans?.find(p => p.plan_type === planType);
+      const amountPaid = plan ? getDiscountedPrice(plan) : 0;
+      
+      await createSubscription.mutateAsync({
+        planType,
+        amountPaid: planType === 'free_trial' ? 0 : amountPaid,
+      });
+
+      toast.success('Subscription activated!');
+      navigate('/');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignupAndSubscribe = async (e: React.FormEvent) => {
@@ -121,7 +149,7 @@ export default function Onboarding() {
     yearly: ['Everything in Monthly', '2 months free', 'Early access to features', 'Premium support'],
   };
 
-  if (plansLoading || authLoading) {
+  if (plansLoading || authLoading || subLoading) {
     return (
       <div className="min-h-screen gradient-hero flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -129,14 +157,8 @@ export default function Onboarding() {
     );
   }
 
-  // Don't render if user is logged in (will redirect via useEffect)
-  if (user) {
-    return (
-      <div className="min-h-screen gradient-hero flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  // If user is logged in but has active subscription, redirect (handled by useEffect)
+  // Otherwise, show the plan selection for renewal
 
   return (
     <div className="min-h-screen gradient-hero py-8 px-4">
