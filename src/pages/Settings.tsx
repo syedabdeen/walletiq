@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useSettings, useUpdateSettings, COUNTRIES } from '@/hooks/useSettings';
 import { useHasActiveSubscription } from '@/hooks/useSubscription';
-import { Globe, Coins, Save, Loader2, Moon, Sun, Monitor, Headphones, Mail, MessageCircle, CreditCard, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { Globe, Coins, Save, Loader2, Moon, Sun, Monitor, Headphones, Mail, MessageCircle, CreditCard, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
 
 export default function Settings() {
   const { data: settings, isLoading } = useSettings();
@@ -52,6 +52,16 @@ export default function Settings() {
 
   const selectedCountryData = COUNTRIES.find(c => c.code === selectedCountry);
 
+  // Calculate remaining days
+  const getRemainingDays = () => {
+    if (!subscription) return 0;
+    return differenceInDays(new Date(subscription.end_date), new Date());
+  };
+
+  const remainingDays = subscription ? getRemainingDays() : 0;
+  const isExpiringSoon = remainingDays <= 7 && remainingDays > 0;
+  const isExpired = remainingDays <= 0;
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -92,6 +102,24 @@ export default function Settings() {
               </div>
             ) : subscription ? (
               <div className="space-y-4">
+                {/* Expiry Warning Banner */}
+                {isExpiringSoon && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+                    <p className="text-sm text-amber-600 dark:text-amber-400">
+                      Your subscription expires in <span className="font-bold">{remainingDays} day{remainingDays !== 1 ? 's' : ''}</span>. Renew now to avoid interruption.
+                    </p>
+                  </div>
+                )}
+                {isExpired && subscription.status === 'active' && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                    <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+                    <p className="text-sm text-destructive">
+                      Your subscription has expired. Please renew to continue using the app.
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-3">
                     <div>
@@ -102,12 +130,28 @@ export default function Settings() {
                     </div>
                   </div>
                   <Badge 
-                    variant={subscription.status === 'active' ? 'default' : 'destructive'}
-                    className={subscription.status === 'active' ? 'bg-green-500/10 text-green-600 border-green-500/20' : ''}
+                    variant={subscription.status === 'active' && !isExpired ? 'default' : 'destructive'}
+                    className={subscription.status === 'active' && !isExpired ? 'bg-green-500/10 text-green-600 border-green-500/20' : ''}
                   >
-                    {subscription.status}
+                    {isExpired ? 'expired' : subscription.status}
                   </Badge>
                 </div>
+
+                {/* Remaining Days Highlight */}
+                {!isExpired && (
+                  <div className={`flex items-center gap-3 p-4 rounded-lg ${isExpiringSoon ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-primary/5 border border-primary/10'}`}>
+                    <div className={`p-2 rounded-full ${isExpiringSoon ? 'bg-amber-500/20' : 'bg-primary/10'}`}>
+                      <Clock className={`w-5 h-5 ${isExpiringSoon ? 'text-amber-500' : 'text-primary'}`} />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Time Remaining</p>
+                      <p className={`text-xl font-bold ${isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
+                        {remainingDays} day{remainingDays !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 rounded-lg bg-muted/30">
                     <div className="flex items-center gap-2 mb-1">
@@ -123,7 +167,7 @@ export default function Settings() {
                       <Calendar className="w-4 h-4 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">Expires On</span>
                     </div>
-                    <p className="font-medium text-foreground">
+                    <p className={`font-medium ${isExpiringSoon || isExpired ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
                       {format(new Date(subscription.end_date), 'MMM dd, yyyy')}
                     </p>
                   </div>
