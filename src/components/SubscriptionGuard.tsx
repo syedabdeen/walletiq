@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHasActiveSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import walletiqLogo from '@/assets/walletiq-logo.png';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SubscriptionGuardProps {
   children: ReactNode;
@@ -16,16 +17,43 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { hasActiveSubscription, isLoading: subLoading, subscription } = useHasActiveSubscription();
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(true);
+
+  // Check if user is super admin (bypass subscription check)
+  useEffect(() => {
+    const checkSuperAdmin = async () => {
+      if (!user) {
+        setIsSuperAdmin(false);
+        setAdminLoading(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('admin_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'super_admin')
+        .maybeSingle();
+
+      setIsSuperAdmin(!!data);
+      setAdminLoading(false);
+    };
+
+    if (!authLoading) {
+      checkSuperAdmin();
+    }
+  }, [user, authLoading]);
 
   // Redirect to onboarding if not logged in
   useEffect(() => {
-    if (!authLoading && !subLoading && !user) {
+    if (!authLoading && !subLoading && !adminLoading && !user) {
       navigate('/onboarding');
     }
-  }, [user, authLoading, subLoading, navigate]);
+  }, [user, authLoading, subLoading, adminLoading, navigate]);
 
   // Still loading
-  if (authLoading || subLoading) {
+  if (authLoading || subLoading || adminLoading) {
     return (
       <div className="min-h-screen gradient-hero flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -40,6 +68,11 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // Super admin bypasses subscription check
+  if (isSuperAdmin) {
+    return <>{children}</>;
   }
 
   // Has active subscription - show the app
