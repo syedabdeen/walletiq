@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings, useUpdateSettings, COUNTRIES } from '@/hooks/useSettings';
-import { Globe, Coins, Save, Loader2 } from 'lucide-react';
+import { Globe, Coins, Save, Loader2, Moon, Sun, Monitor } from 'lucide-react';
 
 export default function Settings() {
   const { data: settings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   
   const [selectedCountry, setSelectedCountry] = useState('AE');
   const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (settings) {
@@ -56,9 +63,63 @@ export default function Settings() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground">Configure your regional preferences</p>
+          <p className="text-muted-foreground">Configure your preferences</p>
         </div>
 
+        {/* Theme Settings */}
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Moon className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Appearance</CardTitle>
+                <CardDescription>
+                  Customize how WalletIQ looks on your device
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label>Theme</Label>
+              {mounted && (
+                <div className="flex gap-2">
+                  <Button
+                    variant={theme === 'light' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTheme('light')}
+                    className="flex-1"
+                  >
+                    <Sun className="w-4 h-4 mr-2" />
+                    Light
+                  </Button>
+                  <Button
+                    variant={theme === 'dark' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTheme('dark')}
+                    className="flex-1"
+                  >
+                    <Moon className="w-4 h-4 mr-2" />
+                    Dark
+                  </Button>
+                  <Button
+                    variant={theme === 'system' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTheme('system')}
+                    className="flex-1"
+                  >
+                    <Monitor className="w-4 h-4 mr-2" />
+                    System
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Regional Settings */}
         <Card className="animate-fade-in">
           <CardHeader>
             <div className="flex items-center gap-3">
