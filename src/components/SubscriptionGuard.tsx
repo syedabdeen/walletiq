@@ -86,8 +86,10 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
             <Button
               variant="ghost"
               className="w-full"
-              onClick={() => {
-                // Allow signing out
+              onClick={async () => {
+                // Sign out first, then redirect to auth
+                const { supabase } = await import('@/integrations/supabase/client');
+                await supabase.auth.signOut();
                 navigate('/auth');
               }}
             >
