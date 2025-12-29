@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { SplashScreen } from "@/components/pwa/SplashScreen";
+import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Expenses from "./pages/Expenses";
@@ -65,19 +66,21 @@ const App = () => {
                 <Sonner />
                 <BrowserRouter>
                   <Routes>
-                    {/* Customer App Routes */}
+                    {/* Public Routes */}
                     <Route path="/onboarding" element={<Onboarding />} />
-                    <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
-                    <Route path="/expenses" element={<Expenses />} />
-                    <Route path="/reports" element={<Reports />} />
-                    <Route path="/history" element={<History />} />
-                    <Route path="/budget" element={<Budget />} />
-                    <Route path="/recurring" element={<Recurring />} />
-                    <Route path="/categories" element={<Categories />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/settings" element={<Settings />} />
                     <Route path="/install" element={<Install />} />
+                    
+                    {/* Protected Customer App Routes */}
+                    <Route path="/" element={<SubscriptionGuard><Index /></SubscriptionGuard>} />
+                    <Route path="/expenses" element={<SubscriptionGuard><Expenses /></SubscriptionGuard>} />
+                    <Route path="/reports" element={<SubscriptionGuard><Reports /></SubscriptionGuard>} />
+                    <Route path="/history" element={<SubscriptionGuard><History /></SubscriptionGuard>} />
+                    <Route path="/budget" element={<SubscriptionGuard><Budget /></SubscriptionGuard>} />
+                    <Route path="/recurring" element={<SubscriptionGuard><Recurring /></SubscriptionGuard>} />
+                    <Route path="/categories" element={<SubscriptionGuard><Categories /></SubscriptionGuard>} />
+                    <Route path="/profile" element={<SubscriptionGuard><Profile /></SubscriptionGuard>} />
+                    <Route path="/settings" element={<SubscriptionGuard><Settings /></SubscriptionGuard>} />
                     
                     {/* Super Admin Routes */}
                     <Route path="/admin/login" element={<AdminLogin />} />
