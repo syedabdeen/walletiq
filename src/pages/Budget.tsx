@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,9 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useBudgetGoals, useCreateBudgetGoal, useDeleteBudgetGoal, BudgetGoal } from '@/hooks/useBudgetGoals';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useCategories } from '@/hooks/useCategories';
 import { useSettings } from '@/hooks/useSettings';
+import { useBudgetAlerts } from '@/hooks/useBudgetAlerts';
 import { Target, Plus, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
@@ -17,9 +19,13 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 export default function Budget() {
   const { data: budgetGoals, isLoading: goalsLoading } = useBudgetGoals();
   const { data: expenses, isLoading: expensesLoading } = useExpenses();
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: settings } = useSettings();
   const createBudgetGoal = useCreateBudgetGoal();
   const deleteBudgetGoal = useDeleteBudgetGoal();
+  
+  // Initialize budget alerts on app open
+  useBudgetAlerts();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newGoal, setNewGoal] = useState({
@@ -29,7 +35,7 @@ export default function Budget() {
   });
 
   const currencySymbol = settings?.currency_symbol || 'د.إ';
-  const isLoading = goalsLoading || expensesLoading;
+  const isLoading = goalsLoading || expensesLoading || categoriesLoading;
 
   // Calculate current month spending per category
   const currentMonthStart = startOfMonth(new Date());
@@ -120,13 +126,13 @@ export default function Budget() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="overall">Overall Monthly Budget</SelectItem>
-                      {expenses?.reduce((acc, e) => {
-                        if (e.expense_categories && !acc.find(c => c.id === e.expense_categories?.id)) {
-                          acc.push(e.expense_categories);
-                        }
-                        return acc;
-                      }, [] as Array<{ id: string; name: string; icon: string }>).map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      {categories?.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          <div className="flex items-center gap-2">
+                            <CategoryIcon icon={cat.icon || 'folder'} className="w-4 h-4" />
+                            {cat.name}
+                          </div>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
