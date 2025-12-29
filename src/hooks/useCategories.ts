@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { DEFAULT_EXPENSE_CATEGORIES } from '@/lib/defaultExpenseCategories';
 import { toast } from 'sonner';
 
 export interface Category {
@@ -20,14 +21,38 @@ export function useCategories() {
     queryKey: ['categories', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from('expense_categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('name');
-      
+
+      const fetchCategories = async () =>
+        supabase
+          .from('expense_categories')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .order('name');
+
+      const { data, error } = await fetchCategories();
+
       if (error) throw error;
+
+      // If a user has no categories yet, seed the default set once.
+      if (!data || data.length === 0) {
+        const { error: seedError } = await supabase.from('expense_categories').insert(
+          DEFAULT_EXPENSE_CATEGORIES.map((c) => ({
+            user_id: user.id,
+            name: c.name,
+            icon: c.icon,
+            is_default: true,
+            is_active: true,
+          }))
+        );
+
+        if (seedError) throw seedError;
+
+        const { data: seeded, error: seededError } = await fetchCategories();
+        if (seededError) throw seededError;
+        return (seeded ?? []) as Category[];
+      }
+
       return data as Category[];
     },
     enabled: !!user,
