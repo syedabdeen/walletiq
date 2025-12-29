@@ -5,12 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { useSettings, useUpdateSettings, COUNTRIES } from '@/hooks/useSettings';
-import { Globe, Coins, Save, Loader2, Moon, Sun, Monitor, Headphones, Mail, MessageCircle } from 'lucide-react';
+import { useHasActiveSubscription } from '@/hooks/useSubscription';
+import { Globe, Coins, Save, Loader2, Moon, Sun, Monitor, Headphones, Mail, MessageCircle, CreditCard, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function Settings() {
   const { data: settings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
+  const { subscription, isLoading: subLoading } = useHasActiveSubscription();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   
@@ -65,6 +69,73 @@ export default function Settings() {
           <h1 className="text-2xl font-bold text-foreground">Settings</h1>
           <p className="text-muted-foreground">Configure your preferences</p>
         </div>
+
+        {/* Subscription Status */}
+        <Card className="animate-fade-in border-primary/20">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <CreditCard className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <CardTitle>Subscription Status</CardTitle>
+                <CardDescription>
+                  Your current plan and billing details
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {subLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : subscription ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Current Plan</p>
+                      <p className="font-semibold text-foreground capitalize">
+                        {subscription.plan_type === 'free_trial' ? 'Free Trial' : subscription.plan_type}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge 
+                    variant={subscription.status === 'active' ? 'default' : 'destructive'}
+                    className={subscription.status === 'active' ? 'bg-green-500/10 text-green-600 border-green-500/20' : ''}
+                  >
+                    {subscription.status}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Start Date</span>
+                    </div>
+                    <p className="font-medium text-foreground">
+                      {format(new Date(subscription.start_date), 'MMM dd, yyyy')}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Expires On</span>
+                    </div>
+                    <p className="font-medium text-foreground">
+                      {format(new Date(subscription.end_date), 'MMM dd, yyyy')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground">No active subscription found.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Theme Settings */}
         <Card className="animate-fade-in">
