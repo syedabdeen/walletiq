@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_roles: {
+        Row: {
+          created_at: string
+          id: string
+          must_change_password: boolean
+          role: Database["public"]["Enums"]["admin_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          must_change_password?: boolean
+          role: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          must_change_password?: boolean
+          role?: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       budget_goals: {
         Row: {
           alert_threshold: number
@@ -230,6 +296,120 @@ export type Database = {
           },
         ]
       }
+      subscription_offers: {
+        Row: {
+          applicable_plans: Database["public"]["Enums"]["subscription_type"][]
+          created_at: string
+          description: string | null
+          discount_percent: number
+          for_existing_subscribers: boolean
+          for_new_subscribers: boolean
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          valid_from: string
+          valid_until: string
+        }
+        Insert: {
+          applicable_plans: Database["public"]["Enums"]["subscription_type"][]
+          created_at?: string
+          description?: string | null
+          discount_percent: number
+          for_existing_subscribers?: boolean
+          for_new_subscribers?: boolean
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          valid_from: string
+          valid_until: string
+        }
+        Update: {
+          applicable_plans?: Database["public"]["Enums"]["subscription_type"][]
+          created_at?: string
+          description?: string | null
+          discount_percent?: number
+          for_existing_subscribers?: boolean
+          for_new_subscribers?: boolean
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          currency_code: string
+          description: string | null
+          duration_days: number
+          id: string
+          is_active: boolean
+          name: string
+          plan_type: Database["public"]["Enums"]["subscription_type"]
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency_code?: string
+          description?: string | null
+          duration_days: number
+          id?: string
+          is_active?: boolean
+          name: string
+          plan_type: Database["public"]["Enums"]["subscription_type"]
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string
+          description?: string | null
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          plan_type?: Database["public"]["Enums"]["subscription_type"]
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           country_code: string
@@ -263,15 +443,79 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subscriptions: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          end_date: string
+          id: string
+          is_renewal: boolean
+          plan_id: string
+          plan_type: Database["public"]["Enums"]["subscription_type"]
+          start_date: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          created_at?: string
+          end_date: string
+          id?: string
+          is_renewal?: boolean
+          plan_id: string
+          plan_type: Database["public"]["Enums"]["subscription_type"]
+          start_date?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_renewal?: boolean
+          plan_id?: string
+          plan_type?: Database["public"]["Enums"]["subscription_type"]
+          start_date?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_subscription: {
+        Args: { _user_id: string }
+        Returns: {
+          amount_paid: number
+          end_date: string
+          id: string
+          plan_type: Database["public"]["Enums"]["subscription_type"]
+          start_date: string
+          status: Database["public"]["Enums"]["subscription_status"]
+        }[]
+      }
+      has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      admin_role: "super_admin"
+      subscription_status: "active" | "expired" | "cancelled"
+      subscription_type: "free_trial" | "monthly" | "yearly"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -398,6 +642,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      admin_role: ["super_admin"],
+      subscription_status: ["active", "expired", "cancelled"],
+      subscription_type: ["free_trial", "monthly", "yearly"],
+    },
   },
 } as const
