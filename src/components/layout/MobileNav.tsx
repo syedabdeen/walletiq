@@ -3,17 +3,16 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   Receipt,
-  BarChart3,
-  History,
+  Target,
+  Repeat,
   Settings,
-  User,
 } from 'lucide-react';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
   { path: '/expenses', icon: Receipt, label: 'Expenses' },
-  { path: '/reports', icon: BarChart3, label: 'Reports' },
-  { path: '/history', icon: History, label: 'History' },
+  { path: '/budget', icon: Target, label: 'Budget' },
+  { path: '/recurring', icon: Repeat, label: 'Recurring' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 

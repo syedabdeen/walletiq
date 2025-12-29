@@ -16,6 +16,8 @@ import History from "./pages/History";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Install from "./pages/Install";
+import Budget from "./pages/Budget";
+import Recurring from "./pages/Recurring";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +57,8 @@ const App = () => {
                   <Route path="/expenses" element={<Expenses />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/history" element={<History />} />
+                  <Route path="/budget" element={<Budget />} />
+                  <Route path="/recurring" element={<Recurring />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/install" element={<Install />} />
