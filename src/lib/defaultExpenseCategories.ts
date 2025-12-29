@@ -1,0 +1,15 @@
+export const DEFAULT_EXPENSE_CATEGORIES = [
+  { name: 'Food & Groceries', icon: 'utensils' },
+  { name: 'Travel & Transportation', icon: 'car' },
+  { name: 'Education', icon: 'graduation-cap' },
+  { name: 'House Rent', icon: 'home' },
+  { name: 'Utilities', icon: 'zap' },
+  { name: 'Cleaning & Maintenance', icon: 'sparkles' },
+  { name: 'Medical & Health', icon: 'heart-pulse' },
+  { name: 'Shopping', icon: 'shopping-bag' },
+  { name: 'Entertainment', icon: 'tv' },
+  { name: 'Bills', icon: 'receipt' },
+  { name: 'Subscription', icon: 'repeat' },
+  { name: 'Water & Electricity', icon: 'lightbulb' },
+  { name: 'Miscellaneous', icon: 'folder' },
+] as const;
