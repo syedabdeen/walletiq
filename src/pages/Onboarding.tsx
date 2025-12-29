@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ const signupSchema = z.object({
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { signUp, user } = useAuth();
+  const { signUp, user, loading: authLoading } = useAuth();
   const { data: plans, isLoading: plansLoading } = useSubscriptionPlans();
   const { data: offers } = useActiveOffers();
   const createSubscription = useCreateSubscription();
@@ -41,10 +41,11 @@ export default function Onboarding() {
   });
 
   // If user is already logged in, redirect to dashboard
-  if (user) {
-    navigate('/');
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/');
+    }
+  }, [user, authLoading, navigate]);
 
   const getApplicableOffer = (planType: SubscriptionType) => {
     return offers?.find(o => 
@@ -120,7 +121,16 @@ export default function Onboarding() {
     yearly: ['Everything in Monthly', '2 months free', 'Early access to features', 'Premium support'],
   };
 
-  if (plansLoading) {
+  if (plansLoading || authLoading) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render if user is logged in (will redirect via useEffect)
+  if (user) {
     return (
       <div className="min-h-screen gradient-hero flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

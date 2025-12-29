@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHasActiveSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +17,13 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const { user, loading: authLoading } = useAuth();
   const { hasActiveSubscription, isLoading: subLoading, subscription } = useHasActiveSubscription();
 
+  // Redirect to onboarding if not logged in
+  useEffect(() => {
+    if (!authLoading && !subLoading && !user) {
+      navigate('/onboarding');
+    }
+  }, [user, authLoading, subLoading, navigate]);
+
   // Still loading
   if (authLoading || subLoading) {
     return (
@@ -26,10 +33,13 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     );
   }
 
-  // Not logged in - redirect to onboarding
+  // Not logged in - show loading while redirecting
   if (!user) {
-    navigate('/onboarding');
-    return null;
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   // Has active subscription - show the app
