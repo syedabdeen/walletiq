@@ -9,6 +9,9 @@ import {
   ShoppingBag,
   Tv,
   Folder,
+  Repeat,
+  Receipt,
+  Lightbulb,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,6 +27,9 @@ const iconMap: Record<string, LucideIcon> = {
   'shopping-bag': ShoppingBag,
   tv: Tv,
   folder: Folder,
+  repeat: Repeat,
+  receipt: Receipt,
+  lightbulb: Lightbulb,
 };
 
 interface CategoryIconProps {

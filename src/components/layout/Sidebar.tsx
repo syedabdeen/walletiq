@@ -8,6 +8,8 @@ import {
   Settings,
   User,
   LogOut,
+  Target,
+  Repeat,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,9 +19,10 @@ import walletiqLogo from '@/assets/walletiq-logo.png';
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/expenses', icon: Receipt, label: 'Expenses' },
+  { path: '/budget', icon: Target, label: 'Budget' },
+  { path: '/recurring', icon: Repeat, label: 'Recurring' },
   { path: '/reports', icon: BarChart3, label: 'Reports' },
   { path: '/history', icon: History, label: 'History' },
-  { path: '/profile', icon: User, label: 'Profile' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
