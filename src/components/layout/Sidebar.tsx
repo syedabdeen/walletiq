@@ -10,6 +10,7 @@ import {
   LogOut,
   Target,
   Repeat,
+  Tags,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ const navItems = [
   { path: '/expenses', icon: Receipt, label: 'Expenses' },
   { path: '/budget', icon: Target, label: 'Budget' },
   { path: '/recurring', icon: Repeat, label: 'Recurring' },
+  { path: '/categories', icon: Tags, label: 'Categories' },
   { path: '/reports', icon: BarChart3, label: 'Reports' },
   { path: '/history', icon: History, label: 'History' },
   { path: '/settings', icon: Settings, label: 'Settings' },
