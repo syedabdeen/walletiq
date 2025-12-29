@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings, useUpdateSettings, COUNTRIES } from '@/hooks/useSettings';
-import { Globe, Coins, Save, Loader2, Moon, Sun, Monitor } from 'lucide-react';
+import { Globe, Coins, Save, Loader2, Moon, Sun, Monitor, Headphones, Mail, MessageCircle } from 'lucide-react';
 
 export default function Settings() {
   const { data: settings, isLoading } = useSettings();
@@ -186,6 +186,52 @@ export default function Settings() {
               )}
               Save Changes
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Help & Support */}
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Headphones className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Help & Support</CardTitle>
+                <CardDescription>
+                  Get in touch with our support team
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <a 
+              href="mailto:cmc@wiedelens.info" 
+              className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors group"
+            >
+              <div className="p-2 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <Mail className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Email Support</p>
+                <p className="font-semibold text-foreground">cmc@wiedelens.info</p>
+              </div>
+            </a>
+
+            <a 
+              href="https://wa.me/971525943300" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors group"
+            >
+              <div className="p-2 rounded-full bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                <MessageCircle className="w-5 h-5 text-green-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">WhatsApp Support</p>
+                <p className="font-semibold text-foreground">+971 52 594 3300</p>
+              </div>
+            </a>
           </CardContent>
         </Card>
       </div>
