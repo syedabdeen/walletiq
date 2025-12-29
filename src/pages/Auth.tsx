@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Wallet, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import walletiqLogo from '@/assets/walletiq-logo.png';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -90,11 +91,9 @@ export default function Auth() {
     <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-scale-in">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary shadow-glow mb-4">
-            <Wallet className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-3xl font-bold text-primary-foreground mb-2">House Expenses</h1>
-          <p className="text-primary-foreground/70">Track and manage your household spending</p>
+          <img src={walletiqLogo} alt="WalletIQ" className="w-24 h-24 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-primary-foreground mb-2">WalletIQ</h1>
+          <p className="text-primary-foreground/70">Smart expense tracking & financial insights</p>
         </div>
 
         <Card className="glass border-border/30">
@@ -212,7 +211,7 @@ export default function Auth() {
         </Card>
 
         <p className="text-center text-primary-foreground/50 text-sm mt-6">
-          Currency: AED (Dubai Dirhams)
+          Powered by WalletIQ
         </p>
       </div>
     </div>

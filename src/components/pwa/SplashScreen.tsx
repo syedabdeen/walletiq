@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Wallet } from 'lucide-react';
+import walletiqLogo from '@/assets/walletiq-logo.png';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -36,12 +36,12 @@ export function SplashScreen({ onComplete, minDuration = 1500 }: SplashScreenPro
       <div className="relative z-10 flex flex-col items-center">
         {/* Animated logo */}
         <div className="relative">
-          <div className="absolute inset-0 rounded-3xl gradient-primary blur-xl opacity-50 animate-pulse" />
-          <div 
-            className="relative w-24 h-24 rounded-3xl gradient-primary shadow-glow flex items-center justify-center animate-scale-in"
-          >
-            <Wallet className="w-12 h-12 text-primary-foreground" />
-          </div>
+          <div className="absolute inset-0 rounded-3xl blur-xl opacity-50 animate-pulse bg-primary/30" />
+          <img 
+            src={walletiqLogo} 
+            alt="WalletIQ" 
+            className="relative w-28 h-28 animate-scale-in"
+          />
         </div>
 
         {/* App name */}
@@ -49,7 +49,7 @@ export function SplashScreen({ onComplete, minDuration = 1500 }: SplashScreenPro
           className="mt-6 text-3xl font-bold text-primary-foreground animate-fade-in"
           style={{ animationDelay: '0.2s' }}
         >
-          House Expenses
+          WalletIQ
         </h1>
 
         {/* Tagline */}
@@ -57,7 +57,7 @@ export function SplashScreen({ onComplete, minDuration = 1500 }: SplashScreenPro
           className="mt-2 text-primary-foreground/70 animate-fade-in"
           style={{ animationDelay: '0.4s' }}
         >
-          Track your household spending
+          Smart expense tracking
         </p>
 
         {/* Loading indicator */}
@@ -75,13 +75,13 @@ export function SplashScreen({ onComplete, minDuration = 1500 }: SplashScreenPro
         </div>
       </div>
 
-      {/* Currency badge */}
+      {/* Brand badge */}
       <div 
         className="absolute bottom-12 text-center animate-fade-in"
         style={{ animationDelay: '0.8s' }}
       >
         <p className="text-primary-foreground/50 text-sm">
-          House Expenses Tracker
+          Powered by WalletIQ
         </p>
       </div>
     </div>
