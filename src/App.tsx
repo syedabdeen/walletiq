@@ -21,7 +21,7 @@ import Budget from "./pages/Budget";
 import Recurring from "./pages/Recurring";
 import Categories from "./pages/Categories";
 import NotFound from "./pages/NotFound";
-
+import Onboarding from "./pages/Onboarding";
 // Admin pages
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminChangePassword from "./pages/admin/AdminChangePassword";
@@ -66,6 +66,7 @@ const App = () => {
                 <BrowserRouter>
                   <Routes>
                     {/* Customer App Routes */}
+                    <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/expenses" element={<Expenses />} />
