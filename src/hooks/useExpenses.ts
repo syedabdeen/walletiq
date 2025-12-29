@@ -10,6 +10,7 @@ export interface Expense {
   amount: number;
   expense_date: string;
   remarks: string | null;
+  attachment_url: string | null;
   created_at: string;
   updated_at: string;
   expense_categories?: {
@@ -106,6 +107,7 @@ export function useAddExpense() {
       amount: number;
       expense_date: string;
       remarks?: string;
+      attachment_url?: string;
     }) => {
       if (!user) throw new Error('Not authenticated');
       
@@ -141,6 +143,7 @@ export function useUpdateExpense() {
       amount?: number;
       expense_date?: string;
       remarks?: string;
+      attachment_url?: string;
     }) => {
       const { data, error } = await supabase
         .from('expenses')
