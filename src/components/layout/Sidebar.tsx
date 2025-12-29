@@ -7,11 +7,11 @@ import {
   History,
   Settings,
   User,
-  Wallet,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import walletiqLogo from '@/assets/walletiq-logo.png';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -34,12 +34,10 @@ export function Sidebar({ className }: SidebarProps) {
     <aside className={cn('flex flex-col h-full bg-card border-r border-border', className)}>
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl gradient-primary">
-            <Wallet className="w-6 h-6 text-primary-foreground" />
-          </div>
+          <img src={walletiqLogo} alt="WalletIQ" className="w-10 h-10 rounded-xl" />
           <div>
-            <h1 className="font-bold text-lg text-foreground">House Expenses</h1>
-            <p className="text-xs text-muted-foreground">Track your spending</p>
+            <h1 className="font-bold text-lg text-foreground">WalletIQ</h1>
+            <p className="text-xs text-muted-foreground">Smart expense tracking</p>
           </div>
         </div>
       </div>
