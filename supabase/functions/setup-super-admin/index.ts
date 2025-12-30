@@ -10,7 +10,6 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Check for a setup key to prevent unauthorized access
   const url = new URL(req.url);
   const setupKey = url.searchParams.get("key");
   if (setupKey !== "walletiq-setup-2024") {
@@ -28,53 +27,135 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
-    // Check if super admin already exists
-    const { data: existingAdmins } = await supabase
-      .from("admin_roles")
-      .select("id")
-      .eq("role", "super_admin")
-      .limit(1);
+    const results: { superAdmin?: string; testUser?: string } = {};
 
-    if (existingAdmins && existingAdmins.length > 0) {
-      return new Response(
-        JSON.stringify({ error: "Super admin already exists" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    // ========== SUPER ADMIN SETUP ==========
+    const superAdminEmail = "superadmin@walletiq.app";
+    const superAdminPassword = "Admin@123";
+
+    // Check if super admin user exists
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingSuperAdmin = existingUsers?.users?.find(u => u.email === superAdminEmail);
+
+    if (existingSuperAdmin) {
+      // Reset password for existing super admin
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        existingSuperAdmin.id,
+        { password: superAdminPassword }
       );
-    }
+      if (updateError) throw updateError;
 
-    // Create the super admin user
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: "superadmin@walletiq.app",
-      password: "super123",
-      email_confirm: true,
-    });
+      // Ensure admin role exists
+      await supabase
+        .from("admin_roles")
+        .upsert({
+          user_id: existingSuperAdmin.id,
+          role: "super_admin",
+          must_change_password: false,
+        }, { onConflict: "user_id" });
 
-    if (authError) {
-      throw authError;
-    }
-
-    // Add to admin_roles table
-    const { error: roleError } = await supabase
-      .from("admin_roles")
-      .insert({
-        user_id: authData.user.id,
-        role: "super_admin",
-        must_change_password: true,
+      results.superAdmin = `Password reset for ${superAdminEmail}`;
+    } else {
+      // Create new super admin
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: superAdminEmail,
+        password: superAdminPassword,
+        email_confirm: true,
       });
+      if (authError) throw authError;
 
-    if (roleError) {
-      // Cleanup: delete the auth user if role insertion fails
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      throw roleError;
+      await supabase
+        .from("admin_roles")
+        .insert({
+          user_id: authData.user.id,
+          role: "super_admin",
+          must_change_password: false,
+        });
+
+      results.superAdmin = `Created ${superAdminEmail}`;
     }
+
+    // ========== TEST USER SETUP ==========
+    const testUserEmail = "testuser@walletiq.app";
+    const testUserPassword = "Test@123";
+
+    const existingTestUser = existingUsers?.users?.find(u => u.email === testUserEmail);
+
+    let testUserId: string;
+
+    if (existingTestUser) {
+      // Reset password for existing test user
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        existingTestUser.id,
+        { password: testUserPassword }
+      );
+      if (updateError) throw updateError;
+      testUserId = existingTestUser.id;
+      results.testUser = `Password reset for ${testUserEmail}`;
+    } else {
+      // Create new test user
+      const { data: testAuthData, error: testAuthError } = await supabase.auth.admin.createUser({
+        email: testUserEmail,
+        password: testUserPassword,
+        email_confirm: true,
+        user_metadata: { full_name: "Test User" }
+      });
+      if (testAuthError) throw testAuthError;
+      testUserId = testAuthData.user.id;
+      results.testUser = `Created ${testUserEmail}`;
+    }
+
+    // Get yearly plan for permanent subscription
+    const { data: yearlyPlan } = await supabase
+      .from("subscription_plans")
+      .select("id")
+      .eq("plan_type", "yearly")
+      .eq("is_active", true)
+      .single();
+
+    if (yearlyPlan) {
+      // Cancel any existing subscriptions
+      await supabase
+        .from("user_subscriptions")
+        .update({ status: "cancelled" })
+        .eq("user_id", testUserId)
+        .eq("status", "active");
+
+      // Create 100-year subscription (effectively permanent)
+      await supabase
+        .from("user_subscriptions")
+        .insert({
+          user_id: testUserId,
+          plan_id: yearlyPlan.id,
+          plan_type: "yearly",
+          start_date: new Date().toISOString(),
+          end_date: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString(),
+          status: "active",
+          amount_paid: 0,
+          is_renewal: false,
+        });
+
+      results.testUser += " with permanent subscription";
+    }
+
+    console.log("Setup completed successfully:", results);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Super admin created successfully",
+        message: "Setup completed successfully",
+        results,
         credentials: {
-          email: "superadmin@walletiq.app",
-          password: "super123 (must change on first login)"
+          superAdmin: {
+            email: superAdminEmail,
+            password: superAdminPassword,
+            loginUrl: "/admin/login"
+          },
+          testUser: {
+            email: testUserEmail,
+            password: testUserPassword,
+            loginUrl: "/auth"
+          }
         }
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -82,6 +163,7 @@ Deno.serve(async (req) => {
 
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Setup error:", message);
     return new Response(
       JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
