@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,24 +16,30 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-const signupSchema = loginSchema.extend({
-  fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
+const signupSchema = loginSchema
+  .extend({
+    fullName: z.string().min(2, 'Name must be at least 2 characters'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
-const resetPasswordSchema = z.object({
-  password: z.string().min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one number'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -42,16 +48,11 @@ export default function Auth() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetPasswordData, setResetPasswordData] = useState({ password: '', confirmPassword: '' });
-  const { signIn, signUp, resetPassword, updatePassword, user } = useAuth();
+  const { signIn, signUp, signOut, resetPassword, updatePassword, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isResetMode = searchParams.get('mode') === 'reset';
 
-  useEffect(() => {
-    if (user && !isResetMode) {
-      navigate('/');
-    }
-  }, [user, navigate, isResetMode]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -261,6 +262,47 @@ export default function Auth() {
                   Back to Sign In
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // If already signed in, don't auto-redirect. This keeps /auth usable even if the app route (/) is failing.
+  if (user) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
+        <div className="w-full max-w-md animate-scale-in">
+          <div className="text-center mb-8">
+            <img src={walletiqLogo} alt="WalletIQ" className="w-20 h-20 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-primary-foreground mb-2">You’re signed in</h1>
+            <p className="text-primary-foreground/70 text-sm break-all">{user.email}</p>
+          </div>
+
+          <Card className="glass border-border/30">
+            <CardHeader className="text-center">
+              <CardTitle>Continue</CardTitle>
+              <CardDescription>
+                If your app screen is blank, sign out and sign in again to refresh your session.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button variant="gradient" className="w-full" onClick={() => navigate('/')}
+              >
+                Go to app
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={async () => {
+                  await signOut();
+                  navigate('/auth');
+                }}
+              >
+                Sign out
+              </Button>
             </CardContent>
           </Card>
         </div>
