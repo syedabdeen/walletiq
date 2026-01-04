@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import walletiqLogo from '@/assets/walletiq-logo.png';
 
 interface SplashScreenProps {
@@ -8,20 +8,30 @@ interface SplashScreenProps {
 
 export function SplashScreen({ onComplete, minDuration = 1500 }: SplashScreenProps) {
   const [isExiting, setIsExiting] = useState(false);
+  const exitOnceRef = useRef(false);
+
+  const exit = useCallback(() => {
+    if (exitOnceRef.current) return;
+    exitOnceRef.current = true;
+    setIsExiting(true);
+    window.setTimeout(onComplete, 500);
+  }, [onComplete]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsExiting(true);
-      // Wait for exit animation to complete
-      setTimeout(onComplete, 500);
-    }, minDuration);
-
-    return () => clearTimeout(timer);
-  }, [minDuration, onComplete]);
+    const timer = window.setTimeout(exit, minDuration);
+    return () => window.clearTimeout(timer);
+  }, [minDuration, exit]);
 
   return (
     <div
-      className={`fixed inset-0 z-[100] gradient-hero flex flex-col items-center justify-center transition-all duration-500 ${
+      role="button"
+      tabIndex={0}
+      onClick={exit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') exit();
+      }}
+      aria-label="Skip splash screen"
+      className={`fixed inset-0 z-[100] gradient-hero flex flex-col items-center justify-center transition-all duration-500 cursor-pointer select-none ${
         isExiting ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
       }`}
     >

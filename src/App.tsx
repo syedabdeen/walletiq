@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -38,23 +38,54 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(() => {
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches;
-    const isFirstLoad = !sessionStorage.getItem('app-loaded');
-    // Skip splash on onboarding to show content immediately
+    // Only show splash on the very first load.
+    // On some mobile/PWA environments, storage access can be blocked; in that case we skip the splash
+    // to avoid the app getting stuck behind it.
     const isOnboarding = window.location.pathname === '/onboarding';
-    return (isPWA || isFirstLoad) && !isOnboarding;
+
+    let isFirstLoad = false;
+    try {
+      isFirstLoad = !localStorage.getItem('app-loaded');
+    } catch {
+      try {
+        isFirstLoad = !sessionStorage.getItem('app-loaded');
+      } catch {
+        isFirstLoad = false;
+      }
+    }
+
+    return isFirstLoad && !isOnboarding;
   });
+
+  const markLoaded = useCallback(() => {
+    try {
+      localStorage.setItem('app-loaded', 'true');
+    } catch {
+      try {
+        sessionStorage.setItem('app-loaded', 'true');
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!showSplash) {
-      sessionStorage.setItem('app-loaded', 'true');
+      markLoaded();
     }
+  }, [showSplash, markLoaded]);
+
+  // Safety net: never allow the splash to block the app indefinitely.
+  useEffect(() => {
+    if (!showSplash) return;
+    const t = window.setTimeout(() => setShowSplash(false), 7000);
+    return () => window.clearTimeout(t);
   }, [showSplash]);
 
-  const handleSplashComplete = () => {
-    sessionStorage.setItem('app-loaded', 'true');
+  const handleSplashComplete = useCallback(() => {
+    markLoaded();
     setShowSplash(false);
-  };
+  }, [markLoaded]);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
