@@ -14,12 +14,18 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
+      // Prevent service-worker registration in preview/development to avoid stale cached builds.
+      injectRegister: null,
+      devOptions: {
+        enabled: false,
+      },
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
       manifest: {
         name: "WalletIQ - Smart Expense Tracking",
         short_name: "WalletIQ",
-        description: "Smart and powerful expense tracking application. Record, analyze, and manage your spending with intelligent insights.",
+        description:
+          "Smart and powerful expense tracking application. Record, analyze, and manage your spending with intelligent insights.",
         theme_color: "#2563EB",
         background_color: "#0f172a",
         display: "standalone",
@@ -46,6 +52,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           {
