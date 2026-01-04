@@ -21,6 +21,8 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
   const [bootstrappingTrial, setBootstrappingTrial] = useState(false);
+  const [stuckLoading, setStuckLoading] = useState(false);
+
 
   // Prevent infinite retry loops if trial activation fails.
   const autoTrialAttemptedForUser = useRef<string | null>(null);
@@ -81,17 +83,69 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     createSubscription,
   ]);
 
+  const isGateLoading = authLoading || subLoading || adminLoading || bootstrappingTrial || createSubscription.isPending;
+
+  useEffect(() => {
+    if (!isGateLoading) {
+      setStuckLoading(false);
+      return;
+    }
+    const t = window.setTimeout(() => setStuckLoading(true), 8000);
+    return () => window.clearTimeout(t);
+  }, [isGateLoading]);
 
   // If not authenticated, immediately send to login (after all hooks are declared).
   if (!authLoading && !user) {
     return <Navigate to="/auth" replace />;
   }
 
+
   // Still loading
-  if (authLoading || subLoading || adminLoading || bootstrappingTrial || createSubscription.isPending) {
+  if (isGateLoading) {
     return (
-      <div className="min-h-screen gradient-hero flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-4">
+          <div className="flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+
+          {stuckLoading && (
+            <Card className="glass border-border/30">
+              <CardHeader>
+                <CardTitle>Still loading…</CardTitle>
+                <CardDescription>
+                  This usually means an old cached build or a stalled request. Use the buttons below to recover.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button className="w-full" variant="gradient" onClick={() => (window.location.href = '/auth')}>
+                  Go to Login
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+                <Button className="w-full" variant="outline" onClick={() => (window.location.href = '/auth?resetCache=1')}>
+                  Reset Cache & Reload
+                </Button>
+                <Button
+                  className="w-full"
+                  variant="ghost"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    window.location.href = '/auth';
+                  }}
+                >
+                  Sign out
+                </Button>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>authLoading: {String(authLoading)}</div>
+                  <div>subLoading: {String(subLoading)}</div>
+                  <div>adminLoading: {String(adminLoading)}</div>
+                  <div>bootstrappingTrial: {String(bootstrappingTrial)}</div>
+                  <div>creatingSubscription: {String(createSubscription.isPending)}</div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     );
   }
