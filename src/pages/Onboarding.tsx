@@ -95,6 +95,29 @@ export default function Onboarding() {
     }
   };
 
+  // Track pending subscription after signup
+  const [pendingSubscription, setPendingSubscription] = useState<{
+    planType: SubscriptionType;
+    amountPaid: number;
+  } | null>(null);
+
+  // Effect to create subscription once user is authenticated after signup
+  useEffect(() => {
+    if (pendingSubscription && user && !createSubscription.isPending) {
+      createSubscription.mutateAsync(pendingSubscription)
+        .then(() => {
+          toast.success('Account created and subscription activated!');
+          setPendingSubscription(null);
+          navigate('/');
+        })
+        .catch((error) => {
+          toast.error(error instanceof Error ? error.message : 'Failed to activate subscription');
+          setPendingSubscription(null);
+          setIsLoading(false);
+        });
+    }
+  }, [user, pendingSubscription]);
+
   const handleSignupAndSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -117,7 +140,8 @@ export default function Onboarding() {
       
       if (signupError) {
         if (signupError.message.includes('already registered')) {
-          toast.error('This email is already registered. Please sign in.');
+          toast.error('This email is already registered. Please sign in instead.');
+          navigate('/auth');
         } else {
           toast.error(signupError.message);
         }
@@ -125,20 +149,17 @@ export default function Onboarding() {
         return;
       }
 
-      // Step 2: Create subscription
+      // Step 2: Queue subscription creation - will be handled by useEffect when user state updates
       const plan = plans?.find(p => p.plan_type === selectedPlan);
       const amountPaid = plan ? getDiscountedPrice(plan) : 0;
       
-      await createSubscription.mutateAsync({
+      setPendingSubscription({
         planType: selectedPlan,
         amountPaid: selectedPlan === 'free_trial' ? 0 : amountPaid,
       });
-
-      toast.success('Account created and subscription activated!');
-      navigate('/');
+      
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'An error occurred');
-    } finally {
       setIsLoading(false);
     }
   };
