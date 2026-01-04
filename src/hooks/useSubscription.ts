@@ -70,14 +70,15 @@ export function useUserSubscription() {
 }
 
 export function useHasActiveSubscription() {
+  const { user } = useAuth();
   const { data: subscription, isLoading, isFetching } = useUserSubscription();
 
   const isActive = subscription
     ? subscription.status === 'active' && new Date(subscription.end_date) > new Date()
     : false;
 
-  // Treat background refetching as loading to avoid UI flicker / duplicate trial bootstraps.
-  const loading = isLoading || isFetching;
+  // If there's no authenticated user, the query is disabled; don't block UI behind "loading".
+  const loading = !!user && (isLoading || isFetching);
 
   return { hasActiveSubscription: isActive, isLoading: loading, subscription };
 }

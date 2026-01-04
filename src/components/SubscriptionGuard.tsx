@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useCreateSubscription, useHasActiveSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,14 +53,6 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
       checkSuperAdmin();
     }
   }, [user, authLoading]);
-
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!authLoading && !subLoading && !adminLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, subLoading, adminLoading, navigate]);
-
   // Auto-start free trial for brand-new users (no subscription yet)
   useEffect(() => {
     if (authLoading || subLoading || adminLoading) return;
@@ -88,6 +80,12 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     bootstrappingTrial,
     createSubscription,
   ]);
+
+
+  // If not authenticated, immediately send to login (after all hooks are declared).
+  if (!authLoading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   // Still loading
   if (authLoading || subLoading || adminLoading || bootstrappingTrial || createSubscription.isPending) {
