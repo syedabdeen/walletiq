@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,7 +7,6 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { SplashScreen } from "@/components/pwa/SplashScreen";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -37,56 +35,8 @@ import AdminSettings from "./pages/admin/AdminSettings";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [showSplash, setShowSplash] = useState(() => {
-    // Only show splash on the very first load.
-    // On some mobile/PWA environments, storage access can be blocked; in that case we skip the splash
-    // to avoid the app getting stuck behind it.
-    const isOnboarding = window.location.pathname === '/onboarding';
-
-    let isFirstLoad = false;
-    try {
-      isFirstLoad = !localStorage.getItem('app-loaded');
-    } catch {
-      try {
-        isFirstLoad = !sessionStorage.getItem('app-loaded');
-      } catch {
-        isFirstLoad = false;
-      }
-    }
-
-    return isFirstLoad && !isOnboarding;
-  });
-
-  const markLoaded = useCallback(() => {
-    try {
-      localStorage.setItem('app-loaded', 'true');
-    } catch {
-      try {
-        sessionStorage.setItem('app-loaded', 'true');
-      } catch {
-        // ignore
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!showSplash) {
-      markLoaded();
-    }
-  }, [showSplash, markLoaded]);
-
-  // Safety net: never allow the splash to block the app indefinitely.
-  useEffect(() => {
-    if (!showSplash) return;
-    const t = window.setTimeout(() => setShowSplash(false), 7000);
-    return () => window.clearTimeout(t);
-  }, [showSplash]);
-
-  const handleSplashComplete = useCallback(() => {
-    markLoaded();
-    setShowSplash(false);
-  }, [markLoaded]);
-
+  // Temporarily disable the splash screen globally to avoid the app getting stuck
+  // behind an overlay on some mobile/PWA environments.
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={queryClient}>
@@ -94,7 +44,6 @@ const App = () => {
           <AuthProvider>
             <SettingsProvider>
               <TooltipProvider>
-                {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
