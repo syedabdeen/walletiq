@@ -54,10 +54,10 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     }
   }, [user, authLoading]);
 
-  // Redirect to onboarding if not logged in
+  // Redirect to auth if not logged in
   useEffect(() => {
     if (!authLoading && !subLoading && !adminLoading && !user) {
-      navigate('/onboarding');
+      navigate('/auth');
     }
   }, [user, authLoading, subLoading, adminLoading, navigate]);
 
