@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
+import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Expenses from "./pages/Expenses";
@@ -47,37 +48,39 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
-                  <Routes>
-                    {/* Public Routes */}
-                    <Route path="/onboarding" element={<Onboarding />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/login" element={<Auth />} />
-                    <Route path="/install" element={<Install />} />
-                    
-                    {/* Protected Customer App Routes */}
-                    <Route path="/" element={<SubscriptionGuard><Index /></SubscriptionGuard>} />
-                    <Route path="/expenses" element={<SubscriptionGuard><Expenses /></SubscriptionGuard>} />
-                    <Route path="/reports" element={<SubscriptionGuard><Reports /></SubscriptionGuard>} />
-                    <Route path="/history" element={<SubscriptionGuard><History /></SubscriptionGuard>} />
-                    <Route path="/budget" element={<SubscriptionGuard><Budget /></SubscriptionGuard>} />
-                    <Route path="/recurring" element={<SubscriptionGuard><Recurring /></SubscriptionGuard>} />
-                    <Route path="/categories" element={<SubscriptionGuard><Categories /></SubscriptionGuard>} />
-                    <Route path="/profile" element={<SubscriptionGuard><Profile /></SubscriptionGuard>} />
-                    <Route path="/settings" element={<SubscriptionGuard><Settings /></SubscriptionGuard>} />
-                    
-                    {/* Super Admin Routes */}
-                    <Route path="/admin/login" element={<AdminLogin />} />
-                    <Route path="/admin/change-password" element={<AdminChangePassword />} />
-                    <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                    <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
-                    <Route path="/admin/users" element={<AdminUsers />} />
-                    <Route path="/admin/offers" element={<AdminOffers />} />
-                    <Route path="/admin/reports" element={<AdminReports />} />
-                    <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
-                    <Route path="/admin/settings" element={<AdminSettings />} />
-                    
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <AppErrorBoundary>
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/onboarding" element={<Onboarding />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/login" element={<Auth />} />
+                      <Route path="/install" element={<Install />} />
+
+                      {/* Protected Customer App Routes */}
+                      <Route path="/" element={<SubscriptionGuard><Index /></SubscriptionGuard>} />
+                      <Route path="/expenses" element={<SubscriptionGuard><Expenses /></SubscriptionGuard>} />
+                      <Route path="/reports" element={<SubscriptionGuard><Reports /></SubscriptionGuard>} />
+                      <Route path="/history" element={<SubscriptionGuard><History /></SubscriptionGuard>} />
+                      <Route path="/budget" element={<SubscriptionGuard><Budget /></SubscriptionGuard>} />
+                      <Route path="/recurring" element={<SubscriptionGuard><Recurring /></SubscriptionGuard>} />
+                      <Route path="/categories" element={<SubscriptionGuard><Categories /></SubscriptionGuard>} />
+                      <Route path="/profile" element={<SubscriptionGuard><Profile /></SubscriptionGuard>} />
+                      <Route path="/settings" element={<SubscriptionGuard><Settings /></SubscriptionGuard>} />
+
+                      {/* Super Admin Routes */}
+                      <Route path="/admin/login" element={<AdminLogin />} />
+                      <Route path="/admin/change-password" element={<AdminChangePassword />} />
+                      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                      <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+                      <Route path="/admin/users" element={<AdminUsers />} />
+                      <Route path="/admin/offers" element={<AdminOffers />} />
+                      <Route path="/admin/reports" element={<AdminReports />} />
+                      <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+                      <Route path="/admin/settings" element={<AdminSettings />} />
+
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </AppErrorBoundary>
                 </BrowserRouter>
               </TooltipProvider>
             </SettingsProvider>
