@@ -2,3 +2,6 @@ project_id = "jpkozpulykjvfhrsamvl"
 
 [functions.setup-super-admin]
 verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = false
