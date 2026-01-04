@@ -31,7 +31,7 @@ export default function Onboarding() {
   const { data: offers } = useActiveOffers();
   const createSubscription = useCreateSubscription();
   
-  const [step, setStep] = useState<'plan' | 'register'>('plan');
+  const [step, setStep] = useState<'plan' | 'selectPlan' | 'register'>('plan');
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -161,28 +161,63 @@ export default function Onboarding() {
   // Otherwise, show the plan selection for renewal
 
   return (
-    <div className="min-h-screen gradient-hero py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <img src={walletiqLogo} alt="WalletIQ" className="w-20 h-20 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-primary-foreground mb-2">Welcome to WalletIQ</h1>
-          <p className="text-primary-foreground/70">Smart expense tracking & financial insights</p>
-        </div>
+    <div className="min-h-screen gradient-hero flex flex-col">
+      {/* Hero Section - Full screen entry */}
+      {step === 'plan' && (
+        <div className="flex-1 flex flex-col">
+          {/* Top Section - Branding */}
+          <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+            <div className="w-28 h-28 md:w-36 md:h-36 mx-auto mb-6 rounded-full bg-white/20 backdrop-blur-md p-4 shadow-glow animate-pulse-slow">
+              <img src={walletiqLogo} alt="WalletIQ" className="w-full h-full object-contain drop-shadow-lg" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 text-center drop-shadow-lg">WalletIQ</h1>
+            <p className="text-lg md:text-xl text-white/90 font-medium text-center max-w-md">
+              Smart expense tracking & financial insights
+            </p>
+          </div>
 
-        {step === 'plan' && (
-          <>
-            {/* Step indicator */}
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
-              <div className="w-16 h-1 bg-muted rounded" />
-              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold">2</div>
+          {/* Bottom Section - Action Buttons */}
+          <div className="bg-card/95 backdrop-blur-lg rounded-t-[2.5rem] shadow-2xl px-6 py-8 md:px-12 md:py-10">
+            <div className="max-w-lg mx-auto space-y-4">
+              {/* New User - Get Started */}
+              <Button
+                onClick={() => setStep('selectPlan')}
+                variant="gradient"
+                className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-glow transition-all duration-300"
+              >
+                Get Started
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+
+              {/* Existing User - Sign In */}
+              <Button
+                onClick={() => navigate('/auth')}
+                variant="outline"
+                className="w-full h-14 text-lg font-semibold border-2 border-primary/30 hover:border-primary hover:bg-primary/5 transition-all duration-300"
+              >
+                I already have an account
+              </Button>
+
+              <p className="text-center text-muted-foreground text-sm pt-4">
+                Join thousands managing their finances smarter
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Plan Selection Step */}
+      {step === 'selectPlan' && (
+        <div className="flex-1 flex flex-col px-4 py-6 overflow-auto">
+          <div className="max-w-4xl mx-auto w-full">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Choose Your Plan</h2>
+              <p className="text-white/70">Start your journey to financial freedom</p>
             </div>
 
-            <h2 className="text-xl font-semibold text-center text-primary-foreground mb-6">Choose Your Plan</h2>
-
             {/* Plans Grid */}
-            <div className="grid md:grid-cols-3 gap-4 mb-8">
+            <div className="grid md:grid-cols-3 gap-4 mb-6">
               {plans?.map((plan) => {
                 const offer = getApplicableOffer(plan.plan_type);
                 const discountedPrice = getDiscountedPrice(plan);
@@ -192,14 +227,14 @@ export default function Onboarding() {
                   <Card
                     key={plan.id}
                     className={cn(
-                      "relative cursor-pointer transition-all border-2 glass",
-                      isPrimary ? "border-primary ring-2 ring-primary/20" : "border-border/30 hover:border-primary/50"
+                      "relative cursor-pointer transition-all border-2 glass hover:scale-[1.02]",
+                      isPrimary ? "border-primary ring-2 ring-primary/20 shadow-glow" : "border-white/20 hover:border-primary/50"
                     )}
                     onClick={() => handlePlanSelect(plan.plan_type)}
                   >
                     {isPrimary && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge className="bg-primary text-primary-foreground">
+                        <Badge className="bg-primary text-primary-foreground shadow-md">
                           <Sparkles className="w-3 h-3 mr-1" />
                           Best Value
                         </Badge>
@@ -240,7 +275,7 @@ export default function Onboarding() {
                       </ul>
                       <Button
                         variant={isPrimary ? "gradient" : "outline"}
-                        className="w-full"
+                        className="w-full h-11"
                       >
                         {plan.plan_type === 'free_trial' ? 'Start Free Trial' : 'Select Plan'}
                         <ArrowRight className="w-4 h-4 ml-2" />
@@ -251,117 +286,110 @@ export default function Onboarding() {
               })}
             </div>
 
-            <p className="text-center text-primary-foreground/50 text-sm">
-              Already have an account?{' '}
-              <button onClick={() => navigate('/auth')} className="text-primary hover:underline">
-                Sign In
-              </button>
-            </p>
-          </>
-        )}
+            <button 
+              onClick={() => setStep('plan')} 
+              className="flex items-center justify-center gap-2 text-white/70 hover:text-white mx-auto transition-colors"
+            >
+              ← Back
+            </button>
+          </div>
+        </div>
+      )}
 
-        {step === 'register' && (
-          <>
-            {/* Step indicator */}
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <div className="w-8 h-8 rounded-full bg-primary/50 text-primary-foreground flex items-center justify-center font-bold">
-                <Check className="w-4 h-4" />
-              </div>
-              <div className="w-16 h-1 bg-primary rounded" />
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
+      {/* Register Step */}
+      {step === 'register' && (
+        <div className="flex-1 flex flex-col px-4 py-6 overflow-auto">
+          <div className="max-w-md mx-auto w-full">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Create Your Account</h2>
+              <p className="text-white/70">
+                You selected: <Badge variant="secondary" className="ml-1">{selectedPlan?.replace('_', ' ').toUpperCase()}</Badge>
+              </p>
             </div>
 
-            <div className="max-w-md mx-auto">
-              <Card className="glass border-border/30">
-                <CardHeader className="text-center">
-                  <CardTitle>Create Your Account</CardTitle>
-                  <CardDescription>
-                    You selected: <Badge variant="secondary">{selectedPlan?.replace('_', ' ').toUpperCase()}</Badge>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSignupAndSubscribe} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Full Name</Label>
-                      <Input
-                        id="fullName"
-                        type="text"
-                        placeholder="John Doe"
-                        value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                        required
-                        className="bg-background/50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        required
-                        className="bg-background/50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        required
-                        className="bg-background/50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.confirmPassword}
-                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                        required
-                        className="bg-background/50"
-                      />
-                    </div>
+            <Card className="glass border-white/20 shadow-2xl">
+              <CardContent className="pt-6">
+                <form onSubmit={handleSignupAndSubscribe} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName" className="text-foreground">Full Name</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="John Doe"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      required
+                      className="bg-background/50 h-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-foreground">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                      className="bg-background/50 h-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-foreground">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                      className="bg-background/50 h-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" className="text-foreground">Confirm Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      required
+                      className="bg-background/50 h-12"
+                    />
+                  </div>
 
-                    <div className="flex gap-3 pt-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setStep('plan')}
-                        className="flex-1"
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        type="submit"
-                        variant="gradient"
-                        className="flex-1"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            Create Account
-                            <ArrowRight className="w-4 h-4 ml-2" />
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            </div>
-          </>
-        )}
-      </div>
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setStep('selectPlan')}
+                      className="flex-1 h-12"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="gradient"
+                      className="flex-1 h-12 font-semibold"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          Create Account
+                          <ArrowRight className="w-5 h-5 ml-2" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
