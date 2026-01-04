@@ -98,7 +98,9 @@ export function useCreateSubscription() {
         .eq('is_active', true)
         .single();
 
-      if (planError || !plan) throw new Error('Plan not found');
+      if (planError || !plan) {
+        throw new Error(planError?.message ?? 'Plan not found');
+      }
 
       const startDate = new Date();
       const endDate = new Date();
@@ -118,7 +120,11 @@ export function useCreateSubscription() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Ensure callers always receive a real Error instance.
+        throw new Error(error.message);
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -126,7 +132,8 @@ export function useCreateSubscription() {
       toast.success('Subscription activated successfully!');
     },
     onError: (error) => {
-      toast.error('Failed to activate subscription: ' + error.message);
+      console.error('[subscription] activate failed', error);
+      toast.error('Failed to activate subscription: ' + (error instanceof Error ? error.message : String(error)));
     },
   });
 }
