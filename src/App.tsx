@@ -40,7 +40,9 @@ const App = () => {
   const [showSplash, setShowSplash] = useState(() => {
     const isPWA = window.matchMedia('(display-mode: standalone)').matches;
     const isFirstLoad = !sessionStorage.getItem('app-loaded');
-    return isPWA || isFirstLoad;
+    // Skip splash on onboarding to show content immediately
+    const isOnboarding = window.location.pathname === '/onboarding';
+    return (isPWA || isFirstLoad) && !isOnboarding;
   });
 
   useEffect(() => {
