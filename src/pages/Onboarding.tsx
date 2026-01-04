@@ -100,22 +100,29 @@ export default function Onboarding() {
     planType: SubscriptionType;
     amountPaid: number;
   } | null>(null);
+  const [subscriptionCreating, setSubscriptionCreating] = useState(false);
 
   // Effect to create subscription once user is authenticated after signup
   useEffect(() => {
-    if (pendingSubscription && user && !createSubscription.isPending) {
-      createSubscription.mutateAsync(pendingSubscription)
-        .then(() => {
+    const createSub = async () => {
+      if (pendingSubscription && user && !subscriptionCreating) {
+        setSubscriptionCreating(true);
+        try {
+          await createSubscription.mutateAsync(pendingSubscription);
           toast.success('Account created and subscription activated!');
           setPendingSubscription(null);
           navigate('/');
-        })
-        .catch((error) => {
+        } catch (error) {
           toast.error(error instanceof Error ? error.message : 'Failed to activate subscription');
           setPendingSubscription(null);
           setIsLoading(false);
-        });
-    }
+        } finally {
+          setSubscriptionCreating(false);
+        }
+      }
+    };
+    
+    createSub();
   }, [user, pendingSubscription]);
 
   const handleSignupAndSubscribe = async (e: React.FormEvent) => {
