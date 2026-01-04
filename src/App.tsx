@@ -51,6 +51,7 @@ const App = () => {
                     {/* Public Routes */}
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/login" element={<Auth />} />
                     <Route path="/install" element={<Install />} />
                     
                     {/* Protected Customer App Routes */}
