@@ -70,13 +70,16 @@ export function useUserSubscription() {
 }
 
 export function useHasActiveSubscription() {
-  const { data: subscription, isLoading } = useUserSubscription();
-  
-  const isActive = subscription 
+  const { data: subscription, isLoading, isFetching } = useUserSubscription();
+
+  const isActive = subscription
     ? subscription.status === 'active' && new Date(subscription.end_date) > new Date()
     : false;
 
-  return { hasActiveSubscription: isActive, isLoading, subscription };
+  // Treat background refetching as loading to avoid UI flicker / duplicate trial bootstraps.
+  const loading = isLoading || isFetching;
+
+  return { hasActiveSubscription: isActive, isLoading: loading, subscription };
 }
 
 export function useCreateSubscription() {
