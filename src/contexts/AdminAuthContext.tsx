@@ -29,7 +29,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       .select('role, must_change_password')
       .eq('user_id', userId)
       .eq('role', 'super_admin')
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       setIsSuperAdmin(false);

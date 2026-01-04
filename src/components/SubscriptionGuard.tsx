@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateSubscription, useHasActiveSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,13 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
   const [bootstrappingTrial, setBootstrappingTrial] = useState(false);
+
+  // Prevent infinite retry loops if trial activation fails.
+  const autoTrialAttemptedForUser = useRef<string | null>(null);
+
+  useEffect(() => {
+    autoTrialAttemptedForUser.current = null;
+  }, [user?.id]);
 
   // Check if user is super admin (bypass subscription check)
   useEffect(() => {
@@ -60,8 +67,11 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     if (!user || isSuperAdmin) return;
     if (subscription !== null) return; // null = no subscription row, undefined = still loading
     if (bootstrappingTrial || createSubscription.isPending) return;
+    if (autoTrialAttemptedForUser.current === user.id) return;
 
+    autoTrialAttemptedForUser.current = user.id;
     setBootstrappingTrial(true);
+
     createSubscription
       .mutateAsync({ planType: 'free_trial', amountPaid: 0 })
       .catch(() => {
