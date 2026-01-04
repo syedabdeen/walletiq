@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useHasActiveSubscription } from '@/hooks/useSubscription';
+import { useCreateSubscription, useHasActiveSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,8 +17,10 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { hasActiveSubscription, isLoading: subLoading, subscription } = useHasActiveSubscription();
+  const createSubscription = useCreateSubscription();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
+  const [bootstrappingTrial, setBootstrappingTrial] = useState(false);
 
   // Check if user is super admin (bypass subscription check)
   useEffect(() => {
@@ -52,8 +54,33 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     }
   }, [user, authLoading, subLoading, adminLoading, navigate]);
 
+  // Auto-start free trial for brand-new users (no subscription yet)
+  useEffect(() => {
+    if (authLoading || subLoading || adminLoading) return;
+    if (!user || isSuperAdmin) return;
+    if (subscription !== null) return; // null = no subscription row, undefined = still loading
+    if (bootstrappingTrial || createSubscription.isPending) return;
+
+    setBootstrappingTrial(true);
+    createSubscription
+      .mutateAsync({ planType: 'free_trial', amountPaid: 0 })
+      .catch(() => {
+        // If it fails, we'll show the onboarding CTA below.
+      })
+      .finally(() => setBootstrappingTrial(false));
+  }, [
+    user,
+    subscription,
+    isSuperAdmin,
+    authLoading,
+    subLoading,
+    adminLoading,
+    bootstrappingTrial,
+    createSubscription,
+  ]);
+
   // Still loading
-  if (authLoading || subLoading || adminLoading) {
+  if (authLoading || subLoading || adminLoading || bootstrappingTrial || createSubscription.isPending) {
     return (
       <div className="min-h-screen gradient-hero flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -80,6 +107,43 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     return <>{children}</>;
   }
 
+  // No subscription yet (new user) - start trial or choose a plan
+  if (subscription === null) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <img src={walletiqLogo} alt="WalletIQ" className="w-20 h-20 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-primary-foreground mb-2">Welcome to WalletIQ</h1>
+            <p className="text-primary-foreground/70">Start with your free trial to continue</p>
+          </div>
+
+          <Card className="glass border-border/30">
+            <CardHeader className="text-center">
+              <CardTitle>Get Started</CardTitle>
+              <CardDescription>Your free trial will be activated automatically.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                variant="gradient"
+                className="w-full"
+                onClick={() => createSubscription.mutate({ planType: 'free_trial', amountPaid: 0 })}
+                disabled={createSubscription.isPending}
+              >
+                Start Free Trial
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+
+              <Button variant="outline" className="w-full" onClick={() => navigate('/onboarding')}>
+                View Plans
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   // Subscription expired - show renewal screen
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
@@ -97,14 +161,14 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
             </div>
             <CardTitle>Access Restricted</CardTitle>
             <CardDescription>
-              Your {subscription?.plan_type.replace('_', ' ')} subscription expired
-              {subscription?.end_date && ` on ${format(new Date(subscription.end_date), 'PPP')}`}.
+              Your {subscription?.plan_type?.replace('_', ' ')} subscription expired
+              {subscription?.end_date && ` on ${format(new Date(subscription.end_date), 'PPP')}`}. 
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-muted/50 rounded-lg text-center">
               <p className="text-sm text-muted-foreground mb-1">Previous Plan</p>
-              <p className="font-semibold capitalize">{subscription?.plan_type.replace('_', ' ') || 'None'}</p>
+              <p className="font-semibold capitalize">{subscription?.plan_type?.replace('_', ' ') || 'None'}</p>
             </div>
 
             <Button
