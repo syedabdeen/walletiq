@@ -271,18 +271,20 @@ export default function Auth() {
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-scale-in">
-        <div className="text-center mb-8">
-          <img src={walletiqLogo} alt="WalletIQ" className="w-24 h-24 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-primary-foreground mb-2">WalletIQ</h1>
-          <p className="text-primary-foreground/70">Smart expense tracking & financial insights</p>
+        <div className="text-center mb-10">
+          <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-white/20 backdrop-blur-md p-3 shadow-glow animate-pulse-slow">
+            <img src={walletiqLogo} alt="WalletIQ" className="w-full h-full object-contain drop-shadow-lg" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 drop-shadow-lg">WalletIQ</h1>
+          <p className="text-xl text-white/90 font-medium">Smart expense tracking & financial insights</p>
         </div>
 
-        <Card className="glass border-border/30">
+        <Card className="glass border-white/20 shadow-2xl">
           <Tabs defaultValue="login" className="w-full">
             <CardHeader className="pb-4">
-              <TabsList className="grid w-full grid-cols-2 bg-muted/50">
-                <TabsTrigger value="login" className="data-[state=active]:bg-card">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="data-[state=active]:bg-card">Sign Up</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-primary/20 h-12">
+                <TabsTrigger value="login" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:font-semibold text-base h-10">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:font-semibold text-base h-10">Sign Up</TabsTrigger>
               </TabsList>
             </CardHeader>
             <CardContent>
@@ -321,13 +323,13 @@ export default function Auth() {
                       className="bg-background/50"
                     />
                   </div>
-                  <Button type="submit" className="w-full" variant="gradient" disabled={isLoading}>
+                  <Button type="submit" className="w-full h-12 text-lg font-semibold shadow-lg hover:shadow-glow transition-all duration-300" variant="gradient" disabled={isLoading}>
                     {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
                         Sign In
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-5 h-5" />
                       </>
                     )}
                   </Button>
@@ -384,13 +386,13 @@ export default function Auth() {
                       className="bg-background/50"
                     />
                   </div>
-                  <Button type="submit" className="w-full" variant="gradient" disabled={isLoading}>
+                  <Button type="submit" className="w-full h-12 text-lg font-semibold shadow-lg hover:shadow-glow transition-all duration-300" variant="gradient" disabled={isLoading}>
                     {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
                         Create Account
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-5 h-5" />
                       </>
                     )}
                   </Button>
@@ -400,7 +402,7 @@ export default function Auth() {
           </Tabs>
         </Card>
 
-        <p className="text-center text-primary-foreground/50 text-sm mt-6">
+        <p className="text-center text-white/70 text-sm mt-8 font-medium">
           Powered by WalletIQ
         </p>
       </div>
