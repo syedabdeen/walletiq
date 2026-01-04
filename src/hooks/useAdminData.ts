@@ -372,3 +372,66 @@ export function useActivateUserSubscription() {
     },
   });
 }
+
+// Update user profile (admin)
+export function useUpdateUserProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, fullName }: { userId: string; fullName: string }) => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName })
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users-subscriptions'] });
+      toast.success('User profile updated successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to update profile: ' + error.message);
+    },
+  });
+}
+
+// Delete user (admin) - uses edge function
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ userId }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete user');
+      }
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users-subscriptions'] });
+      toast.success('User deleted successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to delete user: ' + error.message);
+    },
+  });
+}
