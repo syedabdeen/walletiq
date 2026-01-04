@@ -75,12 +75,12 @@ export default function Onboarding() {
 
   const handleRenewSubscription = async (planType: SubscriptionType) => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
       const plan = plans?.find(p => p.plan_type === planType);
       const amountPaid = plan ? getDiscountedPrice(plan) : 0;
-      
+
       await createSubscription.mutateAsync({
         planType,
         amountPaid: planType === 'free_trial' ? 0 : amountPaid,
@@ -89,7 +89,9 @@ export default function Onboarding() {
       toast.success('Subscription activated!');
       navigate('/');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'An error occurred');
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('[onboarding] renew/activate failed', error);
+      toast.error(message || 'An error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +115,9 @@ export default function Onboarding() {
           setPendingSubscription(null);
           navigate('/');
         } catch (error) {
-          toast.error(error instanceof Error ? error.message : 'Failed to activate subscription');
+          const message = error instanceof Error ? error.message : String(error);
+          console.error('[onboarding] post-signup activation failed', error);
+          toast.error(message || 'Failed to activate subscription');
           setPendingSubscription(null);
           setIsLoading(false);
         } finally {
@@ -121,9 +125,9 @@ export default function Onboarding() {
         }
       }
     };
-    
+
     createSub();
-  }, [user, pendingSubscription]);
+  }, [user, pendingSubscription, subscriptionCreating, createSubscription, navigate]);
 
   const handleSignupAndSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
