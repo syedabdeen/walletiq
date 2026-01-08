@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -48,11 +48,17 @@ export default function Auth() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetPasswordData, setResetPasswordData] = useState({ password: '', confirmPassword: '' });
-  const { signIn, signUp, signOut, resetPassword, updatePassword, user } = useAuth();
+  const { signIn, signUp, signOut, resetPassword, updatePassword, user, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isResetMode = searchParams.get('mode') === 'reset';
 
+  // If user is already logged in, redirect to dashboard
+  useEffect(() => {
+    if (!loading && user && !isResetMode) {
+      navigate('/');
+    }
+  }, [user, loading, navigate, isResetMode]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,6 +153,15 @@ export default function Auth() {
       navigate('/');
     }
   };
+
+  // Show loading while checking auth state
+  if (loading) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   // Password reset mode
   if (isResetMode) {
@@ -262,47 +277,6 @@ export default function Auth() {
                   Back to Sign In
                 </Button>
               </form>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // If already signed in, don't auto-redirect. This keeps /auth usable even if the app route (/) is failing.
-  if (user) {
-    return (
-      <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
-        <div className="w-full max-w-md animate-scale-in">
-          <div className="text-center mb-8">
-            <img src={walletiqLogo} alt="WalletIQ" className="w-20 h-20 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-primary-foreground mb-2">You’re signed in</h1>
-            <p className="text-primary-foreground/70 text-sm break-all">{user.email}</p>
-          </div>
-
-          <Card className="glass border-border/30">
-            <CardHeader className="text-center">
-              <CardTitle>Continue</CardTitle>
-              <CardDescription>
-                If your app screen is blank, sign out and sign in again to refresh your session.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="gradient" className="w-full" onClick={() => navigate('/')}
-              >
-                Go to app
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={async () => {
-                  await signOut();
-                  navigate('/auth');
-                }}
-              >
-                Sign out
-              </Button>
             </CardContent>
           </Card>
         </div>
@@ -443,10 +417,6 @@ export default function Auth() {
             </CardContent>
           </Tabs>
         </Card>
-
-        <p className="text-center text-white/70 text-sm mt-8 font-medium">
-          Powered by WalletIQ
-        </p>
       </div>
     </div>
   );

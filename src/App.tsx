@@ -7,7 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { SubscriptionGuard } from "@/components/SubscriptionGuard";
+import { AuthGuard } from "@/components/AuthGuard";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -21,7 +21,6 @@ import Budget from "./pages/Budget";
 import Recurring from "./pages/Recurring";
 import Categories from "./pages/Categories";
 import NotFound from "./pages/NotFound";
-import Onboarding from "./pages/Onboarding";
 // Admin pages
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminChangePassword from "./pages/admin/AdminChangePassword";
@@ -36,8 +35,6 @@ import AdminSettings from "./pages/admin/AdminSettings";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Temporarily disable the splash screen globally to avoid the app getting stuck
-  // behind an overlay on some mobile/PWA environments.
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={queryClient}>
@@ -51,21 +48,20 @@ const App = () => {
                   <AppErrorBoundary>
                     <Routes>
                       {/* Public Routes */}
-                      <Route path="/onboarding" element={<Onboarding />} />
                       <Route path="/auth" element={<Auth />} />
                       <Route path="/login" element={<Auth />} />
                       <Route path="/install" element={<Install />} />
 
                       {/* Protected Customer App Routes */}
-                      <Route path="/" element={<SubscriptionGuard><Index /></SubscriptionGuard>} />
-                      <Route path="/expenses" element={<SubscriptionGuard><Expenses /></SubscriptionGuard>} />
-                      <Route path="/reports" element={<SubscriptionGuard><Reports /></SubscriptionGuard>} />
-                      <Route path="/history" element={<SubscriptionGuard><History /></SubscriptionGuard>} />
-                      <Route path="/budget" element={<SubscriptionGuard><Budget /></SubscriptionGuard>} />
-                      <Route path="/recurring" element={<SubscriptionGuard><Recurring /></SubscriptionGuard>} />
-                      <Route path="/categories" element={<SubscriptionGuard><Categories /></SubscriptionGuard>} />
-                      <Route path="/profile" element={<SubscriptionGuard><Profile /></SubscriptionGuard>} />
-                      <Route path="/settings" element={<SubscriptionGuard><Settings /></SubscriptionGuard>} />
+                      <Route path="/" element={<AuthGuard><Index /></AuthGuard>} />
+                      <Route path="/expenses" element={<AuthGuard><Expenses /></AuthGuard>} />
+                      <Route path="/reports" element={<AuthGuard><Reports /></AuthGuard>} />
+                      <Route path="/history" element={<AuthGuard><History /></AuthGuard>} />
+                      <Route path="/budget" element={<AuthGuard><Budget /></AuthGuard>} />
+                      <Route path="/recurring" element={<AuthGuard><Recurring /></AuthGuard>} />
+                      <Route path="/categories" element={<AuthGuard><Categories /></AuthGuard>} />
+                      <Route path="/profile" element={<AuthGuard><Profile /></AuthGuard>} />
+                      <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
 
                       {/* Super Admin Routes */}
                       <Route path="/admin/login" element={<AdminLogin />} />

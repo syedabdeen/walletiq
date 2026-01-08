@@ -12,10 +12,8 @@ import {
   Tags,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useHasActiveSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Badge } from '@/components/ui/badge';
 import walletiqLogo from '@/assets/walletiq-logo.png';
 
 const navItems = [
@@ -36,11 +34,9 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { subscription } = useHasActiveSubscription();
 
   // Get display name from user metadata or email
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-  const planType = subscription?.plan_type?.replace('_', ' ') || 'No Plan';
 
   return (
     <aside className={cn('flex flex-col h-full bg-card border-r border-border', className)}>
@@ -64,9 +60,6 @@ export function Sidebar({ className }: SidebarProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 capitalize">
-              {planType}
-            </Badge>
           </div>
         </div>
       </div>
