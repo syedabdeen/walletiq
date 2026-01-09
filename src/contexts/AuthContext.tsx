@@ -161,119 +161,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Web fallback - popup approach
+    // Web: use redirect-based OAuth (no popup, works reliably everywhere)
     const isEmbeddedPreview = window.self !== window.top;
 
-    // Google blocks OAuth flows initiated from embedded/sandboxed iframes.
     if (isEmbeddedPreview) {
       return {
         error: new Error(
-          'Google sign-in is blocked inside the embedded preview. Open the app URL in a normal browser tab (not inside the editor) and try again.'
+          'Google sign-in is blocked inside the embedded preview. Open the app URL in a normal browser tab and try again.'
         ),
       };
     }
 
-    let popup: Window | null = null;
-
     try {
-      // IMPORTANT: open the popup synchronously (before any await)
-      // so browsers don't block it / leave it blank.
-      const width = 500;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-
-      // Use a unique name so we never re-use a previous cross-origin tab/window.
-      const popupName = `google-auth-popup-${Date.now()}`;
-
-      popup = window.open(
-        'about:blank',
-        popupName,
-        `width=${width},height=${height},left=${left},top=${top},popup=yes`
-      );
-
-      if (!popup) {
-        return { error: new Error('Popup was blocked. Please allow popups for this site.') };
-      }
-
-      // Show a simple loading message so the user doesn't see a blank page.
-      try {
-        popup.document.title = 'Signing in…';
-        popup.document.body.style.fontFamily = 'system-ui, sans-serif';
-        popup.document.body.style.padding = '16px';
-        popup.document.body.innerHTML = '<p>Opening Google sign-in…</p>';
-      } catch {
-        // ignore
-      }
-
-      // Get the OAuth URL without redirecting
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      console.debug('[Auth] Starting Google OAuth redirect flow');
+      
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth?popup=true`,
-          skipBrowserRedirect: true,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (error) {
-        popup.close();
+        console.error('[Auth] OAuth error:', error);
         return { error };
       }
 
-      if (!data.url) {
-        popup.close();
-        return { error: new Error('Failed to get OAuth URL') };
-      }
-
-      const oauthUrl = data.url;
-
-      // Navigate the already-open popup to the provider URL
-      try {
-        popup.location.assign(oauthUrl);
-      } catch {
-        // Last resort
-        popup.location.href = oauthUrl;
-      }
-      popup.focus();
-
-      // If the popup/tab stays on about:blank, fall back to opening in this tab.
-      setTimeout(() => {
-        try {
-          if (!popup || popup.closed) return;
-          const href = popup.location.href;
-          if (href === 'about:blank' || href.startsWith('about:blank')) {
-            window.location.assign(oauthUrl);
-          }
-        } catch {
-          // If cross-origin access throws, the popup navigated correctly.
-        }
-      }, 1500);
-
-      // Poll for popup close and auth state change
-      return new Promise<{ error: Error | null }>((resolve) => {
-        const checkPopup = setInterval(() => {
-          if (popup && popup.closed) {
-            clearInterval(checkPopup);
-            // Give a moment for auth state to update
-            setTimeout(() => {
-              resolve({ error: null });
-            }, 500);
-          }
-        }, 500);
-
-        // Timeout after 5 minutes
-        setTimeout(() => {
-          clearInterval(checkPopup);
-          if (popup && !popup.closed) {
-            popup.close();
-          }
-          resolve({ error: new Error('Authentication timed out') });
-        }, 300000);
-      });
+      // The browser will redirect to Google, so we return null here.
+      // The flow continues when Google redirects back to /auth/callback.
+      return { error: null };
     } catch (err) {
-      if (popup && !popup.closed) {
-        popup.close();
-      }
+      console.error('[Auth] Unexpected OAuth error:', err);
       return { error: err instanceof Error ? err : new Error('Unknown error occurred') };
     }
   };

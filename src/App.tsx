@@ -11,6 +11,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import OAuthCallback from "./pages/OAuthCallback";
 import Expenses from "./pages/Expenses";
 import Reports from "./pages/Reports";
 import History from "./pages/History";
@@ -49,6 +50,7 @@ const App = () => {
                     <Routes>
                       {/* Public Routes */}
                       <Route path="/auth" element={<Auth />} />
+                      <Route path="/auth/callback" element={<OAuthCallback />} />
                       <Route path="/login" element={<Auth />} />
                       <Route path="/install" element={<Install />} />
 
