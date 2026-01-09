@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { getDeviceId } from '@/hooks/useDeviceId';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  deviceBlocked: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
@@ -20,6 +23,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deviceBlocked, setDeviceBlocked] = useState(false);
+
+  const checkDeviceAccess = useCallback(async (userId: string): Promise<boolean> => {
+    try {
+      const deviceId = getDeviceId();
+      
+      const { data, error } = await supabase.rpc('check_device_access', {
+        _user_id: userId,
+        _device_id: deviceId,
+      });
+
+      if (error) {
+        console.error('Device check error:', error);
+        return true; // Allow on error to not block users
+      }
+
+      const result = data as unknown as { allowed: boolean; reason: string };
+      
+      if (!result.allowed) {
+        toast.error('This account is already registered on another device. Please use the original device to access your account.');
+        setDeviceBlocked(true);
+        await supabase.auth.signOut();
+        return false;
+      }
+
+      setDeviceBlocked(false);
+      return true;
+    } catch (err) {
+      console.error('Device check error:', err);
+      return true; // Allow on error
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -28,8 +63,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
+
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+        // Check device access
+        const allowed = await checkDeviceAccess(session.user.id);
+        if (!allowed) {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+      }
 
       setSession(session);
       setUser(session?.user ?? null);
@@ -41,8 +87,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Bootstrap session (also handles OAuth callback tokens in the URL)
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
+      
+      if (session?.user) {
+        const allowed = await checkDeviceAccess(session.user.id);
+        if (!allowed) {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -52,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [checkDeviceAccess]);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -122,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, updatePassword }}>
+    <AuthContext.Provider value={{ user, session, loading, deviceBlocked, signUp, signIn, signInWithGoogle, signOut, resetPassword, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

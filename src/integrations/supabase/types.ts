@@ -410,6 +410,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_devices: {
+        Row: {
+          device_id: string
+          device_info: Json | null
+          id: string
+          last_seen_at: string
+          registered_at: string
+          user_id: string
+        }
+        Insert: {
+          device_id: string
+          device_info?: Json | null
+          id?: string
+          last_seen_at?: string
+          registered_at?: string
+          user_id: string
+        }
+        Update: {
+          device_id?: string
+          device_info?: Json | null
+          id?: string
+          last_seen_at?: string
+          registered_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           country_code: string
@@ -498,6 +525,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_device_access: {
+        Args: { _device_id: string; _user_id: string }
+        Returns: Json
+      }
       get_user_subscription: {
         Args: { _user_id: string }
         Returns: {
