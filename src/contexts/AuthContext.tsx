@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { getDeviceId } from '@/hooks/useDeviceId';
+import { getDeviceIdAsync, initializeDeviceFingerprint } from '@/hooks/useDeviceId';
 import { toast } from 'sonner';
 import { isNativePlatform } from '@/lib/capacitor';
 import { nativeGoogleSignIn, nativeGoogleSignOut } from '@/lib/nativeGoogleAuth';
@@ -28,10 +28,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [deviceBlocked, setDeviceBlocked] = useState(false);
+  const fingerprintInitialized = useRef(false);
 
   const checkDeviceAccess = useCallback(async (userId: string): Promise<boolean> => {
     try {
-      const deviceId = getDeviceId();
+      // Ensure fingerprint is initialized before checking
+      if (!fingerprintInitialized.current) {
+        await initializeDeviceFingerprint();
+        fingerprintInitialized.current = true;
+      }
+      
+      const deviceId = await getDeviceIdAsync();
+      console.log('[DeviceCheck] Checking device access for user:', userId, 'deviceId:', deviceId);
       
       const { data, error } = await supabase.rpc('check_device_access', {
         _user_id: userId,
@@ -44,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const result = data as unknown as { allowed: boolean; reason: string };
+      console.log('[DeviceCheck] Result:', result);
       
       if (!result.allowed) {
         toast.error('This account is already registered on another device. Please use the original device to access your account.');
