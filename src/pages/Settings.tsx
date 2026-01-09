@@ -6,16 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings, useUpdateSettings, COUNTRIES } from '@/hooks/useSettings';
-import { Globe, Coins, Save, Loader2, Moon, Sun, Monitor, Headphones, Mail, MessageCircle } from 'lucide-react';
+import { useVoiceLanguage, VOICE_LANGUAGES } from '@/hooks/useVoiceLanguage';
+import { Globe, Coins, Save, Loader2, Moon, Sun, Monitor, Headphones, Mail, MessageCircle, Mic } from 'lucide-react';
+import { isSpeechRecognitionSupported } from '@/lib/voiceExpenseParser';
+import { toast } from 'sonner';
 
 export default function Settings() {
   const { data: settings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
   const { theme, setTheme } = useTheme();
+  const { voiceLanguage, setVoiceLanguage, currentLanguage } = useVoiceLanguage();
   const [mounted, setMounted] = useState(false);
   
   const [selectedCountry, setSelectedCountry] = useState('AE');
+  const [selectedVoiceLanguage, setSelectedVoiceLanguage] = useState(voiceLanguage);
   const [hasChanges, setHasChanges] = useState(false);
+  const [hasVoiceChanges, setHasVoiceChanges] = useState(false);
+  const isVoiceSupported = isSpeechRecognitionSupported();
 
   useEffect(() => {
     setMounted(true);
@@ -27,9 +34,25 @@ export default function Settings() {
     }
   }, [settings]);
 
+  // Sync voice language when it loads
+  useEffect(() => {
+    setSelectedVoiceLanguage(voiceLanguage);
+  }, [voiceLanguage]);
+
   const handleCountryChange = (countryCode: string) => {
     setSelectedCountry(countryCode);
     setHasChanges(countryCode !== settings?.country_code);
+  };
+
+  const handleVoiceLanguageChange = (langCode: string) => {
+    setSelectedVoiceLanguage(langCode);
+    setHasVoiceChanges(langCode !== voiceLanguage);
+  };
+
+  const handleSaveVoiceLanguage = () => {
+    setVoiceLanguage(selectedVoiceLanguage);
+    setHasVoiceChanges(false);
+    toast.success('Voice language updated');
   };
 
   const handleSave = () => {
@@ -186,6 +209,82 @@ export default function Settings() {
               )}
               Save Changes
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Voice Input Settings */}
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Mic className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Voice Input</CardTitle>
+                <CardDescription>
+                  Configure voice input language for adding expenses
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {!isVoiceSupported ? (
+              <div className="p-4 rounded-lg bg-destructive/10 text-destructive">
+                <p className="text-sm">
+                  Voice input is not supported in this browser. Please use Chrome, Edge, or Safari for voice features.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="voice-language">Speech Recognition Language</Label>
+                  <Select value={selectedVoiceLanguage} onValueChange={handleVoiceLanguageChange}>
+                    <SelectTrigger id="voice-language" className="w-full">
+                      <SelectValue placeholder="Select your language" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px] bg-popover border border-border z-50">
+                      {VOICE_LANGUAGES.map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          <span className="flex items-center gap-2">
+                            <span>{lang.name}</span>
+                            {lang.nativeName !== lang.name.split(' ')[0] && (
+                              <span className="text-muted-foreground">({lang.nativeName})</span>
+                            )}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Choose the language you'll speak when adding expenses by voice
+                  </p>
+                </div>
+
+                {currentLanguage && (
+                  <div className="p-4 rounded-lg bg-muted/50 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Mic className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Current Language</span>
+                    </div>
+                    <p className="text-lg font-semibold text-foreground">
+                      {currentLanguage.nativeName}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {currentLanguage.name} ({currentLanguage.code})
+                    </p>
+                  </div>
+                )}
+
+                <Button 
+                  onClick={handleSaveVoiceLanguage} 
+                  disabled={!hasVoiceChanges}
+                  className="w-full sm:w-auto"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Language
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 

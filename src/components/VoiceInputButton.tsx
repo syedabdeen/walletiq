@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useVoiceInput, VoiceInputStatus } from '@/hooks/useVoiceInput';
 import { parseVoiceExpense, ParsedExpense } from '@/lib/voiceExpenseParser';
+import { useVoiceLanguage } from '@/hooks/useVoiceLanguage';
 import { toast } from 'sonner';
 
 interface VoiceInputButtonProps {
@@ -28,6 +29,7 @@ export function VoiceInputButton({
   className,
 }: VoiceInputButtonProps) {
   const [showPulse, setShowPulse] = useState(false);
+  const { voiceLanguage, currentLanguage } = useVoiceLanguage();
 
   const handleResult = (transcript: string) => {
     const parsed = parseVoiceExpense(transcript, categories, defaultCurrency);
@@ -59,6 +61,7 @@ export function VoiceInputButton({
   } = useVoiceInput({
     onResult: handleResult,
     onError: handleError,
+    language: voiceLanguage,
   });
 
   // Pulse animation when listening
@@ -91,10 +94,10 @@ export function VoiceInputButton({
 
   const getTooltipText = (): string => {
     if (!isSupported) return 'Voice input not supported in this browser';
-    if (isListening) return 'Click to stop listening';
+    if (isListening) return `Listening in ${currentLanguage.nativeName}... Click to stop`;
     if (status === 'processing') return 'Processing...';
     if (status === 'error') return 'Try again';
-    return 'Click to speak your expense';
+    return `Speak your expense in ${currentLanguage.nativeName}`;
   };
 
   const getButtonVariant = (): 'outline' | 'destructive' | 'default' => {
