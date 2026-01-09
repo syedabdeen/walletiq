@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { initGoogleAuth } from "./lib/nativeGoogleAuth";
+
+// Initialize native Google Auth if on native platform
+initGoogleAuth().catch(console.error);
 
 // Manual cache reset: Only run cleanup if ?resetCache=1 is in the URL.
 // This prevents aggressive reloads during normal use.

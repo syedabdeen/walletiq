@@ -3,6 +3,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { getDeviceId } from '@/hooks/useDeviceId';
 import { toast } from 'sonner';
+import { isNativePlatform } from '@/lib/capacitor';
+import { nativeGoogleSignIn, nativeGoogleSignOut, initGoogleAuth } from '@/lib/nativeGoogleAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -136,6 +138,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    // Use native Google Sign-In on Android/iOS
+    if (isNativePlatform()) {
+      try {
+        const googleUser = await nativeGoogleSignIn();
+        
+        if (!googleUser) {
+          return { error: new Error('Google sign-in was cancelled') };
+        }
+
+        // Sign in to Supabase using the Google ID token
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: googleUser.authentication.idToken,
+          access_token: googleUser.authentication.accessToken,
+        });
+
+        return { error };
+      } catch (err) {
+        console.error('Native Google Sign-In error:', err);
+        return { error: err instanceof Error ? err : new Error('Google sign-in failed') };
+      }
+    }
+
+    // Web fallback - popup approach
     const isEmbeddedPreview = window.self !== window.top;
 
     // Google blocks OAuth flows initiated from embedded/sandboxed iframes.
@@ -209,6 +235,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     setDeviceBlocked(false);
+    // Also sign out from native Google if on native platform
+    if (isNativePlatform()) {
+      await nativeGoogleSignOut();
+    }
     await supabase.auth.signOut();
   };
 
