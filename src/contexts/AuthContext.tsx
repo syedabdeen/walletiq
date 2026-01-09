@@ -13,7 +13,9 @@ interface AuthContextType {
   deviceBlocked: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithGoogle: (
+    opts?: { redirect?: boolean }
+  ) => Promise<{ error: Error | null; url?: string }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
@@ -137,17 +139,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (opts?: { redirect?: boolean }) => {
+    const redirect = opts?.redirect ?? true;
+
     // Use native Google Sign-In on Android/iOS
     if (isNativePlatform()) {
       try {
         const googleUser = await nativeGoogleSignIn();
-        
+
         if (!googleUser) {
           return { error: new Error('Google sign-in was cancelled') };
         }
 
-        // Sign in to Supabase using the Google ID token
+        // Sign in to backend using the Google ID token
         const { error } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: googleUser.authentication.idToken,
@@ -161,25 +165,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Web: use redirect-based OAuth (no popup, works reliably everywhere)
-    const isEmbeddedPreview = window.self !== window.top;
-
-    if (isEmbeddedPreview) {
-      return {
-        error: new Error(
-          'Google sign-in is blocked inside the embedded preview. Open the app URL in a normal browser tab and try again.'
-        ),
-      };
-    }
-
+    // Web:
+    // Use "skipBrowserRedirect" so we can:
+    // - open Google auth in a new tab from the embedded preview
+    // - avoid browser-specific blank-tab / blocked-redirect behavior
     try {
-      console.debug('[Auth] Starting Google OAuth redirect flow');
-      
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.debug('[Auth] Preparing Google OAuth URL');
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
-        },
+          // supabase-js supports this flag; use `as any` to avoid type drift issues.
+          skipBrowserRedirect: true,
+        } as any,
       });
 
       if (error) {
@@ -187,9 +186,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error };
       }
 
-      // The browser will redirect to Google, so we return null here.
-      // The flow continues when Google redirects back to /auth/callback.
-      return { error: null };
+      const url = (data as any)?.url as string | undefined;
+      if (!url) {
+        return { error: new Error('Could not start Google sign-in (missing URL)') };
+      }
+
+      if (redirect) {
+        window.location.assign(url);
+      }
+
+      return { error: null, url };
     } catch (err) {
       console.error('[Auth] Unexpected OAuth error:', err);
       return { error: err instanceof Error ? err : new Error('Unknown error occurred') };
