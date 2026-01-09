@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getDeviceId } from '@/hooks/useDeviceId';
 import { toast } from 'sonner';
 import { isNativePlatform } from '@/lib/capacitor';
-import { nativeGoogleSignIn, nativeGoogleSignOut, initGoogleAuth } from '@/lib/nativeGoogleAuth';
+import { nativeGoogleSignIn, nativeGoogleSignOut } from '@/lib/nativeGoogleAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -174,6 +174,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      // IMPORTANT: open the popup synchronously (before any await)
+      // so browsers don't block it / leave it blank.
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+
+      const popup = window.open(
+        'about:blank',
+        'google-auth-popup',
+        `width=${width},height=${height},left=${left},top=${top},popup=yes`
+      );
+
+      if (!popup) {
+        return { error: new Error('Popup was blocked. Please allow popups for this site.') };
+      }
+
       // Get the OAuth URL without redirecting
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -184,28 +201,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
+        popup.close();
         return { error };
       }
 
       if (!data.url) {
+        popup.close();
         return { error: new Error('Failed to get OAuth URL') };
       }
 
-      // Open popup window
-      const width = 500;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      
-      const popup = window.open(
-        data.url,
-        'google-auth-popup',
-        `width=${width},height=${height},left=${left},top=${top},popup=yes`
-      );
-
-      if (!popup) {
-        return { error: new Error('Popup was blocked. Please allow popups for this site.') };
-      }
+      // Navigate the already-open popup to the provider URL
+      popup.location.href = data.url;
+      popup.focus();
 
       // Poll for popup close and auth state change
       return new Promise<{ error: Error | null }>((resolve) => {
