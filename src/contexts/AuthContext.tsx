@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { getDeviceIdAsync, initializeDeviceFingerprint } from '@/hooks/useDeviceId';
+import { getDeviceId, getDeviceIdAsync, initializeDeviceFingerprint } from '@/hooks/useDeviceId';
 import { toast } from 'sonner';
 import { isNativePlatform } from '@/lib/capacitor';
 import { nativeGoogleSignIn, nativeGoogleSignOut } from '@/lib/nativeGoogleAuth';
