@@ -48,12 +48,15 @@ export default function Auth() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetPasswordData, setResetPasswordData] = useState({ password: '', confirmPassword: '' });
-const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword, user, loading } = useAuth();
+
+  const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword, user, loading } = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isResetMode = searchParams.get('mode') === 'reset';
   const isPopup = searchParams.get('popup') === 'true';
+  const isEmbeddedPreview = window.self !== window.top;
 
   // If this is a popup window and user is logged in, close the popup
   useEffect(() => {
@@ -144,6 +147,14 @@ const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword, user, l
   };
 
   const handleGoogleSignIn = async () => {
+    // Google sign-in can’t run inside the embedded preview iframe.
+    // Open the same page in a real tab so the OAuth redirect can happen.
+    if (isEmbeddedPreview) {
+      window.open(window.location.href, '_blank', 'noopener,noreferrer');
+      toast.message('Opened in a new tab. Continue with Google there.');
+      return;
+    }
+
     setIsGoogleLoading(true);
     const { error } = await signInWithGoogle();
     setIsGoogleLoading(false);
@@ -379,6 +390,23 @@ const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword, user, l
                       <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
                     </div>
                   </div>
+
+                  {isEmbeddedPreview && (
+                    <div className="rounded-lg border border-border/50 bg-background/40 p-3 text-sm">
+                      <p className="text-foreground">
+                        Google sign-in can’t run inside the embedded preview. Open the app in a new tab to continue.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => window.open(window.location.href, '_blank', 'noopener,noreferrer')}
+                      >
+                        Open in new tab
+                      </Button>
+                    </div>
+                  )}
 
                   <Button
                     type="button"
