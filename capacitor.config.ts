@@ -14,6 +14,9 @@ const config: CapacitorConfig = {
       serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
       forceCodeForRefreshToken: true,
     },
+    SpeechRecognition: {
+      // Plugin will use system default settings
+    },
   },
 };
 
