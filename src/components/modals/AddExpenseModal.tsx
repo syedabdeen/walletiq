@@ -17,6 +17,11 @@ import { toast } from 'sonner';
 import { useSettingsContext } from '@/contexts/SettingsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { ParsedExpense } from '@/lib/voiceExpenseParser';
+
+// Feature flag for voice input
+const ENABLE_VOICE_INPUT = true;
 
 const expenseSchema = z.object({
   category_id: z.string().min(1, 'Please select a category'),
@@ -42,9 +47,35 @@ export function AddExpenseModal({ open, onOpenChange, editingExpense }: AddExpen
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [existingAttachment, setExistingAttachment] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: categories = [] } = useCategories();
+
+  // Handle voice input result
+  const handleVoiceExpense = (parsed: ParsedExpense) => {
+    const newHighlights = new Set<string>();
+
+    if (parsed.amount !== null) {
+      setAmount(parsed.amount.toString());
+      newHighlights.add('amount');
+    }
+
+    if (parsed.categoryMatch && parsed.categoryMatch.confidence >= 0.6) {
+      setCategoryId(parsed.categoryMatch.id);
+      newHighlights.add('category');
+    }
+
+    // Add voice transcript to remarks if there's meaningful text
+    if (parsed.rawText && !remarks) {
+      setRemarks(parsed.rawText);
+      newHighlights.add('remarks');
+    }
+
+    // Highlight fields briefly
+    setHighlightedFields(newHighlights);
+    setTimeout(() => setHighlightedFields(new Set()), 2000);
+  };
   const addExpense = useAddExpense();
   const updateExpense = useUpdateExpense();
 
@@ -174,8 +205,17 @@ export function AddExpenseModal({ open, onOpenChange, editingExpense }: AddExpen
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <DialogTitle>{editingExpense ? 'Edit Expense' : 'Add New Expense'}</DialogTitle>
+          {ENABLE_VOICE_INPUT && !editingExpense && (
+            <VoiceInputButton
+              categories={categories.map(c => ({ id: c.id, name: c.name }))}
+              defaultCurrency={currencyCode}
+              onParsedExpense={handleVoiceExpense}
+              disabled={isLoading}
+              className="ml-auto"
+            />
+          )}
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
@@ -208,7 +248,12 @@ export function AddExpenseModal({ open, onOpenChange, editingExpense }: AddExpen
           <div className="space-y-2">
             <Label>Category</Label>
             <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger>
+              <SelectTrigger
+                className={cn(
+                  'transition-all duration-300',
+                  highlightedFields.has('category') && 'ring-2 ring-primary ring-offset-2 bg-primary/5'
+                )}
+              >
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent className="bg-popover">
@@ -234,6 +279,10 @@ export function AddExpenseModal({ open, onOpenChange, editingExpense }: AddExpen
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               required
+              className={cn(
+                'transition-all duration-300',
+                highlightedFields.has('amount') && 'ring-2 ring-primary ring-offset-2 bg-primary/5'
+              )}
             />
           </div>
 
@@ -301,6 +350,10 @@ export function AddExpenseModal({ open, onOpenChange, editingExpense }: AddExpen
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
               rows={2}
+              className={cn(
+                'transition-all duration-300',
+                highlightedFields.has('remarks') && 'ring-2 ring-primary ring-offset-2 bg-primary/5'
+              )}
             />
           </div>
 
