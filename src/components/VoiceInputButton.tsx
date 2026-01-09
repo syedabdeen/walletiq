@@ -32,14 +32,20 @@ export function VoiceInputButton({
   const { voiceLanguage, currentLanguage } = useVoiceLanguage();
 
   const handleResult = (transcript: string) => {
+    console.log('[VoiceInputButton] Received transcript:', transcript);
+    console.log('[VoiceInputButton] Categories available:', categories.length);
+    
     const parsed = parseVoiceExpense(transcript, categories, defaultCurrency);
+    console.log('[VoiceInputButton] Parsed result:', parsed);
     
     if (parsed.amount) {
+      console.log('[VoiceInputButton] Calling onParsedExpense with:', parsed);
       onParsedExpense(parsed);
       toast.success('Voice input processed', {
         description: `"${transcript}"`,
       });
     } else {
+      console.warn('[VoiceInputButton] No amount detected in:', transcript);
       toast.error("Couldn't understand clearly", {
         description: 'Please try again or enter manually.',
       });
