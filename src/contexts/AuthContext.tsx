@@ -79,46 +79,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    // Google blocks OAuth inside iframes; open a real top-level tab synchronously, then navigate it.
-    let popup: Window | null = null;
-    try {
-      popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
-    } catch {
-      popup = null;
+    const isEmbeddedPreview = window.self !== window.top;
+
+    // Google blocks OAuth flows initiated from embedded/sandboxed iframes.
+    // In that case we fail fast with a clear message so users can open the app directly in a normal tab.
+    if (isEmbeddedPreview) {
+      return {
+        error: new Error(
+          'Google sign-in is blocked inside the embedded preview. Open the app URL in a normal browser tab (not inside the editor) and try again.'
+        ),
+      };
     }
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/login`,
-        skipBrowserRedirect: true,
       },
     });
 
-    if (error) {
-      try {
-        popup?.close();
-      } catch {
-        // ignore
-      }
-      return { error };
-    }
-
-    const url = data?.url;
-    if (url) {
-      if (popup && !popup.closed) {
-        popup.location.assign(url);
-      } else {
-        // If popup was blocked, attempt top-level navigation; otherwise fallback to current window.
-        try {
-          window.top?.location.assign(url);
-        } catch {
-          window.location.assign(url);
-        }
-      }
-    }
-
-    return { error: null };
+    return { error };
   };
 
   const signOut = async () => {
