@@ -54,25 +54,30 @@ export function AddExpenseModal({ open, onOpenChange, editingExpense }: AddExpen
 
   // Handle voice input result
   const handleVoiceExpense = (parsed: ParsedExpense) => {
+    console.log('[AddExpenseModal] handleVoiceExpense called with:', parsed);
     const newHighlights = new Set<string>();
 
     if (parsed.amount !== null) {
+      console.log('[AddExpenseModal] Setting amount to:', parsed.amount.toString());
       setAmount(parsed.amount.toString());
       newHighlights.add('amount');
     }
 
     if (parsed.categoryMatch && parsed.categoryMatch.confidence >= 0.6) {
+      console.log('[AddExpenseModal] Setting category to:', parsed.categoryMatch.id, parsed.categoryMatch.name);
       setCategoryId(parsed.categoryMatch.id);
       newHighlights.add('category');
     }
 
     // Add voice transcript to remarks if there's meaningful text
     if (parsed.rawText && !remarks) {
+      console.log('[AddExpenseModal] Setting remarks to:', parsed.rawText);
       setRemarks(parsed.rawText);
       newHighlights.add('remarks');
     }
 
     // Highlight fields briefly
+    console.log('[AddExpenseModal] Highlighting fields:', Array.from(newHighlights));
     setHighlightedFields(newHighlights);
     setTimeout(() => setHighlightedFields(new Set()), 2000);
   };
