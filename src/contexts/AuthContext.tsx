@@ -79,7 +79,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    // In embedded previews (iframes), Google OAuth can be blocked; get the URL and redirect the top-level context.
+    // Google blocks OAuth inside iframes; open a real top-level tab synchronously, then navigate it.
+    let popup: Window | null = null;
+    try {
+      popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
+    } catch {
+      popup = null;
+    }
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -88,20 +95,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
-    if (error) return { error };
+    if (error) {
+      try {
+        popup?.close();
+      } catch {
+        // ignore
+      }
+      return { error };
+    }
 
     const url = data?.url;
     if (url) {
-      try {
-        if (window.self !== window.top) {
-          // Navigate the top frame (break out of the preview iframe)
-          window.top!.location.assign(url);
-        } else {
+      if (popup && !popup.closed) {
+        popup.location.assign(url);
+      } else {
+        // If popup was blocked, attempt top-level navigation; otherwise fallback to current window.
+        try {
+          window.top?.location.assign(url);
+        } catch {
           window.location.assign(url);
         }
-      } catch {
-        // Fallback if top navigation is blocked by the browser
-        window.open(url, '_blank', 'noopener,noreferrer');
       }
     }
 
