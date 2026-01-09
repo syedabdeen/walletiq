@@ -173,6 +173,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
+    let popup: Window | null = null;
+
     try {
       // IMPORTANT: open the popup synchronously (before any await)
       // so browsers don't block it / leave it blank.
@@ -181,14 +183,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2;
 
-      const popup = window.open(
+      // Use a unique name so we never re-use a previous cross-origin tab/window.
+      const popupName = `google-auth-popup-${Date.now()}`;
+
+      popup = window.open(
         'about:blank',
-        'google-auth-popup',
+        popupName,
         `width=${width},height=${height},left=${left},top=${top},popup=yes`
       );
 
       if (!popup) {
         return { error: new Error('Popup was blocked. Please allow popups for this site.') };
+      }
+
+      // Show a simple loading message so the user doesn't see a blank page.
+      try {
+        popup.document.title = 'Signing in…';
+        popup.document.body.style.fontFamily = 'system-ui, sans-serif';
+        popup.document.body.style.padding = '16px';
+        popup.document.body.innerHTML = '<p>Opening Google sign-in…</p>';
+      } catch {
+        // ignore
       }
 
       // Get the OAuth URL without redirecting
@@ -210,14 +225,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: new Error('Failed to get OAuth URL') };
       }
 
+      const oauthUrl = data.url;
+
       // Navigate the already-open popup to the provider URL
-      popup.location.href = data.url;
+      try {
+        popup.location.assign(oauthUrl);
+      } catch {
+        // Last resort
+        popup.location.href = oauthUrl;
+      }
       popup.focus();
+
+      // If the popup/tab stays on about:blank, fall back to opening in this tab.
+      setTimeout(() => {
+        try {
+          if (!popup || popup.closed) return;
+          const href = popup.location.href;
+          if (href === 'about:blank' || href.startsWith('about:blank')) {
+            window.location.assign(oauthUrl);
+          }
+        } catch {
+          // If cross-origin access throws, the popup navigated correctly.
+        }
+      }, 1500);
 
       // Poll for popup close and auth state change
       return new Promise<{ error: Error | null }>((resolve) => {
         const checkPopup = setInterval(() => {
-          if (popup.closed) {
+          if (popup && popup.closed) {
             clearInterval(checkPopup);
             // Give a moment for auth state to update
             setTimeout(() => {
@@ -229,13 +264,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Timeout after 5 minutes
         setTimeout(() => {
           clearInterval(checkPopup);
-          if (!popup.closed) {
+          if (popup && !popup.closed) {
             popup.close();
           }
           resolve({ error: new Error('Authentication timed out') });
         }, 300000);
       });
     } catch (err) {
+      if (popup && !popup.closed) {
+        popup.close();
+      }
       return { error: err instanceof Error ? err : new Error('Unknown error occurred') };
     }
   };
