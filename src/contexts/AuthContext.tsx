@@ -141,11 +141,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    return { error };
+
+    if (error) return { error };
+
+    // Enforce single-device access immediately so the UI doesn't show a "success" state
+    // and then bounce back to /auth after the auth listener signs the user out.
+    if (data.user) {
+      const allowed = await checkDeviceAccess(data.user.id);
+      if (!allowed) {
+        return {
+          error: new Error(
+            'This account is already registered on another device. Please use the original device to access your account.',
+          ),
+        };
+      }
+    }
+
+    return { error: null };
   };
 
   const signInWithGoogle = async (opts?: { redirect?: boolean }) => {
