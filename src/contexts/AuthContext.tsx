@@ -79,14 +79,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    // Redirect back to a public route so OAuth callback can complete before any guards run.
-    const { error } = await supabase.auth.signInWithOAuth({
+    // In embedded previews (iframes), Google OAuth can be blocked; get the URL and redirect the top-level context.
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/login`,
+        skipBrowserRedirect: true,
       },
     });
-    return { error };
+
+    if (error) return { error };
+
+    const url = data?.url;
+    if (url) {
+      try {
+        if (window.self !== window.top) {
+          // Navigate the top frame (break out of the preview iframe)
+          window.top!.location.assign(url);
+        } else {
+          window.location.assign(url);
+        }
+      } catch {
+        // Fallback if top navigation is blocked by the browser
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    }
+
+    return { error: null };
   };
 
   const signOut = async () => {
