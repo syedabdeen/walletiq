@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { getDeviceId } from './useDeviceId';
+import { getDeviceIdAsync } from './useDeviceId';
 
 interface DeviceCheckResult {
   allowed: boolean;
@@ -16,7 +16,8 @@ export function useDeviceCheck() {
     setDeviceError(null);
 
     try {
-      const deviceId = getDeviceId();
+      const deviceId = await getDeviceIdAsync();
+      console.log('[useDeviceCheck] Checking device:', deviceId, 'for user:', userId);
       
       const { data, error } = await supabase.rpc('check_device_access', {
         _user_id: userId,
@@ -30,6 +31,7 @@ export function useDeviceCheck() {
       }
 
       const result = data as unknown as DeviceCheckResult;
+      console.log('[useDeviceCheck] Result:', result);
       
       if (!result.allowed) {
         setDeviceError('This account is already registered on another device. Please use the original device to access your account.');
