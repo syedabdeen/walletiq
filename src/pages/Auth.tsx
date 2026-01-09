@@ -41,7 +41,7 @@ const resetPasswordSchema = z
     path: ['confirmPassword'],
   });
 
-const Auth = React.forwardRef<HTMLDivElement, Record<string, never>>(function Auth(_props, _ref) {
+function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', confirmPassword: '', fullName: '' });
@@ -552,6 +552,6 @@ const Auth = React.forwardRef<HTMLDivElement, Record<string, never>>(function Au
       </div>
     </div>
   );
-});
+}
 
 export default Auth;
