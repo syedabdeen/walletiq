@@ -139,7 +139,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isEmbeddedPreview = window.self !== window.top;
 
     // Google blocks OAuth flows initiated from embedded/sandboxed iframes.
-    // In that case we fail fast with a clear message so users can open the app directly in a normal tab.
     if (isEmbeddedPreview) {
       return {
         error: new Error(
@@ -148,17 +147,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth`,
-      },
-    });
+    try {
+      // Get the OAuth URL without redirecting
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth?popup=true`,
+          skipBrowserRedirect: true,
+        },
+      });
 
-    return { error };
+      if (error) {
+        return { error };
+      }
+
+      if (!data.url) {
+        return { error: new Error('Failed to get OAuth URL') };
+      }
+
+      // Open popup window
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      const popup = window.open(
+        data.url,
+        'google-auth-popup',
+        `width=${width},height=${height},left=${left},top=${top},popup=yes`
+      );
+
+      if (!popup) {
+        return { error: new Error('Popup was blocked. Please allow popups for this site.') };
+      }
+
+      // Poll for popup close and auth state change
+      return new Promise<{ error: Error | null }>((resolve) => {
+        const checkPopup = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkPopup);
+            // Give a moment for auth state to update
+            setTimeout(() => {
+              resolve({ error: null });
+            }, 500);
+          }
+        }, 500);
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          clearInterval(checkPopup);
+          if (!popup.closed) {
+            popup.close();
+          }
+          resolve({ error: new Error('Authentication timed out') });
+        }, 300000);
+      });
+    } catch (err) {
+      return { error: err instanceof Error ? err : new Error('Unknown error occurred') };
+    }
   };
 
   const signOut = async () => {
+    setDeviceBlocked(false);
     await supabase.auth.signOut();
   };
 
