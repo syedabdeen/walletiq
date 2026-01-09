@@ -51,13 +51,12 @@ export default function Auth() {
 
   const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword, user, loading } = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [autoGoogleStarted, setAutoGoogleStarted] = useState(false);
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isResetMode = searchParams.get('mode') === 'reset';
   const isPopup = searchParams.get('popup') === 'true';
-  const autoGoogle = searchParams.get('autogoogle') === '1';
+  const fromPreview = searchParams.get('fromPreview') === '1';
   const isEmbeddedPreview = window.self !== window.top;
 
   // If this is a popup window and user is logged in, close the popup
@@ -74,24 +73,26 @@ export default function Auth() {
     }
   }, [user, loading, navigate, isResetMode, isPopup]);
 
-  // One-click Google sign-in from the embedded preview:
-  // we open a real tab and auto-start OAuth there.
-  useEffect(() => {
-    if (!autoGoogle) return;
-    if (autoGoogleStarted) return;
-    if (isEmbeddedPreview) return;
-    if (isResetMode || isPopup) return;
-    if (loading || user) return;
+  // NOTE:
+  // Some browsers block auto-redirecting a newly opened tab to Google without a direct
+  // user gesture in that tab. When users come from the embedded preview we therefore
+  // show an in-page hint and require a click.
 
-    setAutoGoogleStarted(true);
 
-    (async () => {
-      setIsGoogleLoading(true);
-      const { error } = await signInWithGoogle();
-      setIsGoogleLoading(false);
-      if (error) toast.error(error.message);
-    })();
-  }, [autoGoogle, autoGoogleStarted, isEmbeddedPreview, isResetMode, isPopup, loading, user, signInWithGoogle]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,14 +168,13 @@ export default function Auth() {
   };
 
   const handleGoogleSignIn = async () => {
-    // Always open Google sign-in in a new tab/window.
-    // This is the most reliable way to complete OAuth across environments.
-    const isAutoTab = autoGoogle && !isEmbeddedPreview;
-
-    if (!isAutoTab) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('autogoogle', '1');
-      window.open(url.toString(), '_blank', 'noopener,noreferrer');
+    // Google sign-in can’t complete inside the embedded preview (iframe).
+    // Open a real tab; the user completes the flow there with a click.
+    if (isEmbeddedPreview) {
+      const url = new URL(`${window.location.origin}/auth`);
+      url.searchParams.set('fromPreview', '1');
+      window.open(url.toString(), '_blank');
+      toast.message('Opened a new tab. Continue with Google there.');
       return;
     }
 
@@ -182,9 +182,7 @@ export default function Auth() {
     const { error } = await signInWithGoogle();
     setIsGoogleLoading(false);
 
-    if (error) {
-      toast.error(error.message);
-    }
+    if (error) toast.error(error.message);
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
