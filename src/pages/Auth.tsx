@@ -53,13 +53,22 @@ const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword, user, l
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isResetMode = searchParams.get('mode') === 'reset';
+  const isPopup = searchParams.get('popup') === 'true';
+
+  // If this is a popup window and user is logged in, close the popup
+  useEffect(() => {
+    if (isPopup && !loading && user) {
+      // Close popup after successful OAuth
+      window.close();
+    }
+  }, [isPopup, user, loading]);
 
   // If user is already logged in, redirect to dashboard
   useEffect(() => {
-    if (!loading && user && !isResetMode) {
+    if (!loading && user && !isResetMode && !isPopup) {
       navigate('/');
     }
-  }, [user, loading, navigate, isResetMode]);
+  }, [user, loading, navigate, isResetMode, isPopup]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
