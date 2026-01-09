@@ -56,7 +56,14 @@ function Auth() {
   const [searchParams] = useSearchParams();
   const isResetMode = searchParams.get('mode') === 'reset';
   const isPopup = searchParams.get('popup') === 'true';
-  const isEmbeddedPreview = window.self !== window.top;
+  const isEmbeddedPreview = (() => {
+    try {
+      // Accessing `window.top` can throw in cross-origin iframes.
+      return window.self !== window.top;
+    } catch {
+      return true;
+    }
+  })();
 
   // If this is a popup window and user is logged in, close the popup
   useEffect(() => {
