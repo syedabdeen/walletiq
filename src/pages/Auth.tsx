@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -41,7 +41,7 @@ const resetPasswordSchema = z
     path: ['confirmPassword'],
   });
 
-export default function Auth() {
+const Auth = React.forwardRef<HTMLDivElement, Record<string, never>>(function Auth(_props, _ref) {
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', confirmPassword: '', fullName: '' });
@@ -552,4 +552,6 @@ export default function Auth() {
       </div>
     </div>
   );
-}
+});
+
+export default Auth;
