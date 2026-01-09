@@ -56,7 +56,6 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const isResetMode = searchParams.get('mode') === 'reset';
   const isPopup = searchParams.get('popup') === 'true';
-  const fromPreview = searchParams.get('fromPreview') === '1';
   const isEmbeddedPreview = window.self !== window.top;
 
   // If this is a popup window and user is logged in, close the popup
@@ -72,27 +71,6 @@ export default function Auth() {
       navigate('/');
     }
   }, [user, loading, navigate, isResetMode, isPopup]);
-
-  // NOTE:
-  // Some browsers block auto-redirecting a newly opened tab to Google without a direct
-  // user gesture in that tab. When users come from the embedded preview we therefore
-  // show an in-page hint and require a click.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,18 +146,32 @@ export default function Auth() {
   };
 
   const handleGoogleSignIn = async () => {
-    // Google sign-in can’t complete inside the embedded preview (iframe).
-    // Open a real tab; the user completes the flow there with a click.
+    setIsGoogleLoading(true);
+
+    // In the embedded preview (iframe), we must open Google auth in a real tab.
     if (isEmbeddedPreview) {
-      const url = new URL(`${window.location.origin}/auth`);
-      url.searchParams.set('fromPreview', '1');
-      window.open(url.toString(), '_blank');
-      toast.message('Opened a new tab. Continue with Google there.');
+      const { error, url } = await signInWithGoogle({ redirect: false });
+      setIsGoogleLoading(false);
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (!url) {
+        toast.error('Could not start Google sign-in. Please try again.');
+        return;
+      }
+
+      const opened = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        toast.error('Popup blocked. Please allow popups and try again.');
+      }
+
       return;
     }
 
-    setIsGoogleLoading(true);
-    const { error } = await signInWithGoogle();
+    const { error } = await signInWithGoogle({ redirect: true });
     setIsGoogleLoading(false);
 
     if (error) toast.error(error.message);
