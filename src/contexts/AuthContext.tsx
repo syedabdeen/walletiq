@@ -141,27 +141,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) return { error };
+      if (error) return { error };
 
-    // Enforce single-device access immediately so the UI doesn't show a "success" state
-    // and then bounce back to /auth after the auth listener signs the user out.
-    if (data.user) {
-      const allowed = await checkDeviceAccess(data.user.id);
-      if (!allowed) {
-        return {
-          error: new Error(
-            'This account is already registered on another device. Please use the original device to access your account.',
-          ),
-        };
+      // Enforce single-device access immediately so the UI doesn't show a "success" state
+      // and then bounce back to /auth after the auth listener signs the user out.
+      if (data.user) {
+        const allowed = await checkDeviceAccess(data.user.id);
+        if (!allowed) {
+          return {
+            error: new Error(
+              'This account is already registered on another device. Please use the original device to access your account.',
+            ),
+          };
+        }
       }
-    }
 
-    return { error: null };
+      return { error: null };
+    } catch (err) {
+      console.error('[Auth] signIn unexpected error:', err);
+      return { error: err instanceof Error ? err : new Error('Sign in failed. Please try again.') };
+    }
   };
 
   const signInWithGoogle = async (opts?: { redirect?: boolean }) => {
