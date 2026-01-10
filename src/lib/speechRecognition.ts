@@ -20,6 +20,14 @@ export interface SpeechRecognitionCallbacks {
 
 let nativePlugin: typeof import('@capacitor-community/speech-recognition').SpeechRecognition | null = null;
 let nativeListenerCleanup: (() => Promise<void>) | null = null;
+let activeEngine: 'native' | 'web' | null = null;
+
+/**
+ * Get the currently active speech recognition engine
+ */
+export function getActiveEngine(): 'native' | 'web' | null {
+  return activeEngine;
+}
 
 /**
  * Check if speech recognition is available on this platform
@@ -75,14 +83,17 @@ export async function startSpeechRecognition(
   // Try native first if on native platform
   if (isNativePlatform()) {
     try {
+      activeEngine = 'native';
       await startNativeSpeechRecognition(language, callbacks);
       return;
     } catch (e) {
       console.warn('[SpeechRecognition] Native failed, falling back to web:', e);
+      activeEngine = null;
     }
   }
   
   // Web fallback
+  activeEngine = 'web';
   startWebSpeechRecognition(language, callbacks);
 }
 
@@ -101,6 +112,7 @@ export async function stopSpeechRecognition(): Promise<void> {
   
   // Always try to stop web as well (safe to call even if not running)
   stopWebSpeechRecognition();
+  activeEngine = null;
 }
 
 // ============ Native Implementation ============
