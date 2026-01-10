@@ -25,20 +25,26 @@ let nativeListenerCleanup: (() => Promise<void>) | null = null;
  * Check if speech recognition is available on this platform
  */
 export async function isSpeechRecognitionAvailable(): Promise<boolean> {
+  // Check native platform first
   if (isNativePlatform()) {
     try {
       const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
       const { available } = await SpeechRecognition.available();
       return available;
     } catch (e) {
-      console.error('[SpeechRecognition] Native plugin not available:', e);
-      return false;
+      console.warn('[SpeechRecognition] Native plugin not available, falling back to web:', e);
+      // Fall through to web check
     }
   }
   
-  // Web fallback
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  return !!SpeechRecognition;
+  // Web Speech API check
+  try {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    return !!SpeechRecognition;
+  } catch (e) {
+    console.error('[SpeechRecognition] Web API check failed:', e);
+    return false;
+  }
 }
 
 /**
@@ -66,22 +72,35 @@ export async function startSpeechRecognition(
   language: string,
   callbacks: SpeechRecognitionCallbacks
 ): Promise<void> {
+  // Try native first if on native platform
   if (isNativePlatform()) {
-    await startNativeSpeechRecognition(language, callbacks);
-  } else {
-    startWebSpeechRecognition(language, callbacks);
+    try {
+      await startNativeSpeechRecognition(language, callbacks);
+      return;
+    } catch (e) {
+      console.warn('[SpeechRecognition] Native failed, falling back to web:', e);
+    }
   }
+  
+  // Web fallback
+  startWebSpeechRecognition(language, callbacks);
 }
 
 /**
  * Stop speech recognition
  */
 export async function stopSpeechRecognition(): Promise<void> {
+  // Try to stop both - one will work depending on which is active
   if (isNativePlatform()) {
-    await stopNativeSpeechRecognition();
-  } else {
-    stopWebSpeechRecognition();
+    try {
+      await stopNativeSpeechRecognition();
+    } catch (e) {
+      console.warn('[SpeechRecognition] Native stop failed:', e);
+    }
   }
+  
+  // Always try to stop web as well (safe to call even if not running)
+  stopWebSpeechRecognition();
 }
 
 // ============ Native Implementation ============
