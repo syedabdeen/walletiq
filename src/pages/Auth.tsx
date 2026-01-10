@@ -81,7 +81,7 @@ function Auth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const result = loginSchema.safeParse(loginData);
     if (!result.success) {
       toast.error(result.error.errors[0].message);
@@ -89,18 +89,25 @@ function Auth() {
     }
 
     setIsLoading(true);
-    const { error } = await signIn(loginData.email, loginData.password);
-    setIsLoading(false);
+    try {
+      const { error } = await signIn(loginData.email, loginData.password);
 
-    if (error) {
-      if (error.message.includes('Invalid login credentials')) {
-        toast.error('Invalid email or password');
-      } else {
-        toast.error(error.message);
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password');
+        } else {
+          toast.error(error.message);
+        }
+        return;
       }
-    } else {
+
       toast.success('Welcome back!');
       navigate('/');
+    } catch (err) {
+      console.error('[AuthPage] handleLogin unexpected error:', err);
+      toast.error('Sign in failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
