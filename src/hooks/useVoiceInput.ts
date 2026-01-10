@@ -3,6 +3,7 @@ import {
   isSpeechRecognitionAvailable,
   startSpeechRecognition,
   stopSpeechRecognition,
+  getActiveEngine,
 } from '@/lib/speechRecognition';
 
 export type VoiceInputStatus = 'idle' | 'listening' | 'processing' | 'error' | 'unsupported';
@@ -23,6 +24,7 @@ interface UseVoiceInputReturn {
   stopListening: () => void;
   resetTranscript: () => void;
   isSupported: boolean;
+  activeEngine: 'native' | 'web' | null;
 }
 
 export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInputReturn {
@@ -32,6 +34,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState(true);
+  const [engine, setEngine] = useState<'native' | 'web' | null>(null);
 
   const onResultRef = useRef(onResult);
   const onErrorRef = useRef(onError);
@@ -83,10 +86,12 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
           console.log('[useVoiceInput] Recognition started');
           setStatus('listening');
           setError(null);
+          setEngine(getActiveEngine());
         },
         onEnd: () => {
           console.log('[useVoiceInput] Recognition ended');
           setStatus((prev) => (prev === 'listening' ? 'idle' : prev));
+          setEngine(null);
         },
         onResult: (result) => {
           console.log('[useVoiceInput] Result:', result);
@@ -120,6 +125,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
       console.warn('[useVoiceInput] Stop error:', err);
     }
     setStatus('idle');
+    setEngine(null);
   }, []);
 
   const resetTranscript = useCallback(() => {
@@ -137,5 +143,6 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
     stopListening,
     resetTranscript,
     isSupported,
+    activeEngine: engine,
   };
 }
