@@ -1,9 +1,18 @@
 import { Capacitor } from '@capacitor/core';
 
 export const isNativePlatform = (): boolean => {
-  return Capacitor.isNativePlatform();
+  try {
+    return Capacitor.isNativePlatform();
+  } catch (e) {
+    // Not running in a Capacitor environment
+    return false;
+  }
 };
 
 export const getPlatform = (): string => {
-  return Capacitor.getPlatform();
+  try {
+    return Capacitor.getPlatform();
+  } catch (e) {
+    return 'web';
+  }
 };
