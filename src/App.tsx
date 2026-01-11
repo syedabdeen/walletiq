@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
@@ -53,6 +53,13 @@ const App = () => {
                       <Route path="/auth/callback" element={<OAuthCallback />} />
                       <Route path="/login" element={<Auth />} />
                       <Route path="/install" element={<Install />} />
+
+                      {/* Back-compat: old subscription/pricing URLs now always go to login */}
+                      <Route path="/subscription" element={<Navigate to="/auth" replace />} />
+                      <Route path="/subscriptions" element={<Navigate to="/auth" replace />} />
+                      <Route path="/pricing" element={<Navigate to="/auth" replace />} />
+                      <Route path="/plans" element={<Navigate to="/auth" replace />} />
+                      <Route path="/subscribe" element={<Navigate to="/auth" replace />} />
 
                       {/* Protected Customer App Routes */}
                       <Route path="/" element={<AuthGuard><Index /></AuthGuard>} />

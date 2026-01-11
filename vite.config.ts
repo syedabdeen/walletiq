@@ -14,8 +14,8 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      // Prevent service-worker registration in preview/development to avoid stale cached builds.
-      injectRegister: null,
+      // Register SW only in production builds (avoids stale caches in preview/dev).
+      injectRegister: mode === "development" ? null : "auto",
       devOptions: {
         enabled: false,
       },
@@ -31,7 +31,8 @@ export default defineConfig(({ mode }) => ({
         display: "standalone",
         orientation: "portrait",
         scope: "/",
-        start_url: "/",
+        // Always start on login when launched as an installed app.
+        start_url: "/auth",
         icons: [
           {
             src: "/pwa-192x192.png",
@@ -52,6 +53,9 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
+        // Ensure new deployments take over quickly (fixes "stuck on old build" on mobile).
+        clientsClaim: true,
+        skipWaiting: true,
         cleanupOutdatedCaches: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
