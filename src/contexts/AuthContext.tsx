@@ -23,6 +23,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {
+  let timeoutId: number | undefined;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(`${label} timed out`)), ms);
+  });
+
+  return (Promise.race([Promise.resolve(promise as any), timeoutPromise]) as Promise<T>).finally(() => {
+    if (timeoutId) window.clearTimeout(timeoutId);
+  });
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -34,17 +45,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Ensure fingerprint is initialized before checking
       if (!fingerprintInitialized.current) {
-        await initializeDeviceFingerprint();
+        await withTimeout(initializeDeviceFingerprint(), 6000, 'Fingerprint init');
         fingerprintInitialized.current = true;
       }
-      
-      const deviceId = await getDeviceIdAsync();
+
+      const deviceId = await withTimeout(getDeviceIdAsync(), 6000, 'Get device id');
       console.log('[DeviceCheck] Checking device access for user:', userId, 'deviceId:', deviceId);
-      
-      const { data, error } = await supabase.rpc('check_device_access', {
-        _user_id: userId,
-        _device_id: deviceId,
-      });
+
+      const { data, error } = await withTimeout(
+        supabase.rpc('check_device_access', {
+          _user_id: userId,
+          _device_id: deviceId,
+        }),
+        8000,
+        'Device access check',
+      );
 
       if (error) {
         console.error('Device check error:', error);
@@ -53,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const result = data as unknown as { allowed: boolean; reason: string };
       console.log('[DeviceCheck] Result:', result);
-      
+
       if (!result.allowed) {
         toast.error('This account is already registered on another device. Please use the original device to access your account.');
         setDeviceBlocked(true);
@@ -142,10 +157,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({
+          email,
+          password,
+        }),
+        15000,
+        'Sign in',
+      );
 
       if (error) return { error };
 

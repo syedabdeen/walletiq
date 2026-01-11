@@ -8,13 +8,30 @@ const FINGERPRINT_KEY = 'walletiq_fingerprint';
 let cachedFingerprint: string | null = null;
 
 async function generateFingerprint(): Promise<string> {
+  const timeoutMs = 6000;
+
+  const withTimeout = async <T,>(promise: Promise<T>, label: string): Promise<T> => {
+    let timeoutId: number | undefined;
+    const timeoutPromise = new Promise<T>((_, reject) => {
+      timeoutId = window.setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
+    });
+
+    try {
+      return (await Promise.race([promise, timeoutPromise])) as T;
+    } finally {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    }
+  };
+
   try {
-    const fp = await FingerprintJS.load();
-    const result = await fp.get();
+    const fp = (await withTimeout(FingerprintJS.load(), 'FingerprintJS.load')) as Awaited<
+      ReturnType<typeof FingerprintJS.load>
+    >;
+    const result = await withTimeout(fp.get(), 'FingerprintJS.get');
     return result.visitorId;
   } catch (error) {
     console.error('Fingerprint generation failed:', error);
-    // Fallback to random ID if fingerprinting fails
+    // Fallback to random ID if fingerprinting fails or times out
     const timestamp = Date.now().toString(36);
     const randomPart = Math.random().toString(36).substring(2, 15);
     return `fallback-${timestamp}-${randomPart}`;
