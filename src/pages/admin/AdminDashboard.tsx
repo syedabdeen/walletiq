@@ -1,10 +1,15 @@
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useSubscriptionStats } from '@/hooks/useAdminData';
-import { Users, CreditCard, TrendingUp, DollarSign, Loader2 } from 'lucide-react';
+import { usePendingWhitelistCount } from '@/hooks/useWhitelistRequests';
+import { Users, CreditCard, TrendingUp, DollarSign, Loader2, Smartphone, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useSubscriptionStats();
+  const { data: pendingCount } = usePendingWhitelistCount();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -60,6 +65,37 @@ export default function AdminDashboard() {
           <h1 className="text-2xl font-bold text-white">Dashboard</h1>
           <p className="text-slate-400">Overview of your subscription business</p>
         </div>
+
+        {/* Pending Whitelist Requests Alert */}
+        {pendingCount && pendingCount > 0 ? (
+          <Card className="bg-yellow-500/10 border-yellow-500/30">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-yellow-500/20">
+                    <Smartphone className="w-5 h-5 text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-yellow-500">
+                      {pendingCount} Pending Whitelist Request{pendingCount > 1 ? 's' : ''}
+                    </p>
+                    <p className="text-sm text-yellow-500/70">
+                      Users are requesting device access approval
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="text-yellow-500 border-yellow-500/30 hover:bg-yellow-500/10"
+                  onClick={() => navigate('/admin/whitelist-requests')}
+                >
+                  View Requests
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

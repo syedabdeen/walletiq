@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
+import { ArrowRight, Loader2, ArrowLeft, Smartphone } from 'lucide-react';
 import { z } from 'zod';
 import walletiqLogo from '@/assets/walletiq-logo.png';
+import { WhitelistRequestModal } from '@/components/modals/WhitelistRequestModal';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -48,8 +49,9 @@ function Auth() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetPasswordData, setResetPasswordData] = useState({ password: '', confirmPassword: '' });
+  const [showWhitelistModal, setShowWhitelistModal] = useState(false);
 
-  const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword, user, loading } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword, user, loading, deviceBlocked, deviceMismatchInfo, clearDeviceMismatch } = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -212,12 +214,64 @@ function Auth() {
     }
   };
 
-
   // Show loading while checking auth state
   if (loading) {
     return (
       <div className="min-h-screen gradient-hero flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Device blocked - show option to request whitelist
+  if (deviceBlocked && deviceMismatchInfo) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
+        <div className="w-full max-w-md animate-scale-in">
+          <div className="text-center mb-8">
+            <img src={walletiqLogo} alt="WalletIQ" className="w-24 h-24 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-primary-foreground mb-2">Device Restricted</h1>
+            <p className="text-primary-foreground/70">Your account is registered on another device</p>
+          </div>
+
+          <Card className="glass border-border/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-orange-500" />
+                Access Denied
+              </CardTitle>
+              <CardDescription>
+                This account is already registered on a different device. You can request access from this new device.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                className="w-full"
+                variant="gradient"
+                onClick={() => setShowWhitelistModal(true)}
+              >
+                Request Device Access
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={clearDeviceMismatch}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Sign In
+              </Button>
+            </CardContent>
+          </Card>
+
+          <WhitelistRequestModal
+            open={showWhitelistModal}
+            onOpenChange={setShowWhitelistModal}
+            userId={deviceMismatchInfo.userId}
+            currentDeviceId={deviceMismatchInfo.currentDeviceId}
+            newDeviceId={deviceMismatchInfo.newDeviceId}
+          />
+        </div>
       </div>
     );
   }

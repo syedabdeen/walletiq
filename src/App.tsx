@@ -32,6 +32,7 @@ import AdminOffers from "./pages/admin/AdminOffers";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminWhitelistRequests from "./pages/admin/AdminWhitelistRequests";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,7 @@ const App = () => {
                       <Route path="/admin/dashboard" element={<AdminDashboard />} />
                       <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
                       <Route path="/admin/users" element={<AdminUsers />} />
+                      <Route path="/admin/whitelist-requests" element={<AdminWhitelistRequests />} />
                       <Route path="/admin/offers" element={<AdminOffers />} />
                       <Route path="/admin/reports" element={<AdminReports />} />
                       <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />

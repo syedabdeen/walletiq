@@ -523,6 +523,48 @@ export type Database = {
           },
         ]
       }
+      whitelist_requests: {
+        Row: {
+          admin_response: string | null
+          created_at: string
+          current_device_id: string
+          id: string
+          new_device_id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["whitelist_request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string
+          current_device_id: string
+          id?: string
+          new_device_id: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["whitelist_request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string
+          current_device_id?: string
+          id?: string
+          new_device_id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["whitelist_request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -550,6 +592,7 @@ export type Database = {
       admin_role: "super_admin"
       subscription_status: "active" | "expired" | "cancelled"
       subscription_type: "free_trial" | "monthly" | "yearly"
+      whitelist_request_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -680,6 +723,7 @@ export const Constants = {
       admin_role: ["super_admin"],
       subscription_status: ["active", "expired", "cancelled"],
       subscription_type: ["free_trial", "monthly", "yearly"],
+      whitelist_request_status: ["pending", "approved", "rejected"],
     },
   },
 } as const
