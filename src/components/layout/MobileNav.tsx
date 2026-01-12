@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   Receipt,
   Target,
-  Tags,
+  User,
   Settings,
 } from 'lucide-react';
 
@@ -12,7 +12,7 @@ const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
   { path: '/expenses', icon: Receipt, label: 'Expenses' },
   { path: '/budget', icon: Target, label: 'Budget' },
-  { path: '/categories', icon: Tags, label: 'Categories' },
+  { path: '/profile', icon: User, label: 'Profile' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
