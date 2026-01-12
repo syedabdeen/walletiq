@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useAllUsersWithSubscriptions, useActivateUserSubscription, useUpdateUserProfile, useDeleteUser } from '@/hooks/useAdminData';
-import { Loader2, UserPlus, Pencil, Trash2, X, Check } from 'lucide-react';
+import { useAllUsersWithSubscriptions, useActivateUserSubscription, useUpdateUserProfile, useDeleteUser, useResetUserDevice } from '@/hooks/useAdminData';
+import { Loader2, UserPlus, Pencil, Trash2, X, Check, ShieldOff, Smartphone } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { SubscriptionType } from '@/hooks/useSubscription';
@@ -17,12 +17,14 @@ export default function AdminUsers() {
   const activateSub = useActivateUserSubscription();
   const updateProfile = useUpdateUserProfile();
   const deleteUser = useDeleteUser();
+  const resetDevice = useResetUserDevice();
   
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionType>('monthly');
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [resetDeviceConfirm, setResetDeviceConfirm] = useState<{ id: string; name: string } | null>(null);
 
   const handleActivate = (userId: string) => {
     activateSub.mutate({ userId, planType: selectedPlan, amountPaid: 0 });
@@ -46,6 +48,13 @@ export default function AdminUsers() {
     }
   };
 
+  const handleResetDevice = () => {
+    if (resetDeviceConfirm) {
+      resetDevice.mutate(resetDeviceConfirm.id);
+      setResetDeviceConfirm(null);
+    }
+  };
+
   if (isLoading) {
     return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></AdminLayout>;
   }
@@ -55,7 +64,7 @@ export default function AdminUsers() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-white">User Management</h1>
-          <p className="text-slate-400">View, edit, and manage user subscriptions</p>
+          <p className="text-slate-400">View, edit, and manage user subscriptions and device whitelisting</p>
         </div>
 
         <Card className="bg-slate-800 border-slate-700">
@@ -72,6 +81,7 @@ export default function AdminUsers() {
                   <TableHead className="text-slate-300">Status</TableHead>
                   <TableHead className="text-slate-300">Amount</TableHead>
                   <TableHead className="text-slate-300">End Date</TableHead>
+                  <TableHead className="text-slate-300">Device</TableHead>
                   <TableHead className="text-slate-300">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -113,6 +123,18 @@ export default function AdminUsers() {
                       {user.subscription?.end_date ? format(new Date(user.subscription.end_date), 'PP') : '-'}
                     </TableCell>
                     <TableCell>
+                      {user.device ? (
+                        <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                          <Smartphone className="w-3 h-3 mr-1" />
+                          Registered
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-slate-600">
+                          None
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-1">
                         {selectedUser === user.id ? (
                           <div className="flex gap-2">
@@ -141,6 +163,17 @@ export default function AdminUsers() {
                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleStartEdit(user.id, user.full_name || '')} title="Edit Name">
                               <Pencil className="w-4 h-4 text-yellow-400" />
                             </Button>
+                            {user.device && (
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="h-8 w-8" 
+                                onClick={() => setResetDeviceConfirm({ id: user.id, name: user.full_name || 'this user' })} 
+                                title="Reset Device (Unwhitelist)"
+                              >
+                                <ShieldOff className="w-4 h-4 text-orange-400" />
+                              </Button>
+                            )}
                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setDeleteConfirm({ id: user.id, name: user.full_name || 'this user' })} title="Delete User">
                               <Trash2 className="w-4 h-4 text-red-400" />
                             </Button>
@@ -171,6 +204,30 @@ export default function AdminUsers() {
             <Button variant="destructive" onClick={handleDelete} disabled={deleteUser.isPending}>
               {deleteUser.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Device Confirmation Dialog */}
+      <Dialog open={!!resetDeviceConfirm} onOpenChange={(open) => !open && setResetDeviceConfirm(null)}>
+        <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Reset Device Lock</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Are you sure you want to reset the device lock for <span className="font-semibold text-white">{resetDeviceConfirm?.name}</span>? 
+              They will be able to login from any device, and their next login will register the new device.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetDeviceConfirm(null)}>Cancel</Button>
+            <Button 
+              className="bg-orange-600 hover:bg-orange-700" 
+              onClick={handleResetDevice} 
+              disabled={resetDevice.isPending}
+            >
+              {resetDevice.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Reset Device
             </Button>
           </DialogFooter>
         </DialogContent>
