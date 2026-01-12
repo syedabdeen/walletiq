@@ -12,9 +12,12 @@ import {
   Settings, 
   LogOut,
   Loader2,
-  ClipboardList
+  ClipboardList,
+  Smartphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { usePendingWhitelistCount } from '@/hooks/useWhitelistRequests';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -24,6 +27,7 @@ const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
   { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/whitelist-requests', label: 'Whitelist Requests', icon: Smartphone, hasBadge: true },
   { href: '/admin/offers', label: 'Offers', icon: Gift },
   { href: '/admin/reports', label: 'Reports', icon: FileText },
   { href: '/admin/audit-logs', label: 'Audit Logs', icon: ClipboardList },
@@ -31,9 +35,10 @@ const navItems = [
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const { isSuperAdmin, loading, mustChangePassword, signOut } = useAdminAuth();
+  const { isSuperAdmin, loading, mustChangePassword, signOut, user } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { data: pendingCount } = usePendingWhitelistCount();
 
   useEffect(() => {
     if (!loading && !isSuperAdmin) {
@@ -91,6 +96,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             >
               <item.icon className="w-4 h-4" />
               {item.label}
+              {item.hasBadge && pendingCount && pendingCount > 0 ? (
+                <Badge className="ml-auto bg-yellow-500 text-black text-xs px-1.5 py-0.5 min-w-[1.25rem] text-center">
+                  {pendingCount}
+                </Badge>
+              ) : null}
             </Link>
           ))}
         </nav>

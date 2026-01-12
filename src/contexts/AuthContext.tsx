@@ -6,11 +6,18 @@ import { toast } from 'sonner';
 import { isNativePlatform } from '@/lib/capacitor';
 import { nativeGoogleSignIn, nativeGoogleSignOut } from '@/lib/nativeGoogleAuth';
 
+interface DeviceMismatchInfo {
+  userId: string;
+  currentDeviceId: string;
+  newDeviceId: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   deviceBlocked: boolean;
+  deviceMismatchInfo: DeviceMismatchInfo | null;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: (
@@ -19,6 +26,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
+  clearDeviceMismatch: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [deviceBlocked, setDeviceBlocked] = useState(false);
+  const [deviceMismatchInfo, setDeviceMismatchInfo] = useState<DeviceMismatchInfo | null>(null);
   const fingerprintInitialized = useRef(false);
 
   const checkDeviceAccess = useCallback(async (userId: string): Promise<boolean> => {
@@ -70,13 +79,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[DeviceCheck] Result:', result);
 
       if (!result.allowed) {
-        toast.error('This account is already registered on another device. Please use the original device to access your account.');
+        // Get the registered device for this user to store mismatch info
+        const { data: deviceData } = await supabase
+          .from('user_devices')
+          .select('device_id')
+          .eq('user_id', userId)
+          .single();
+
+        setDeviceMismatchInfo({
+          userId,
+          currentDeviceId: deviceData?.device_id || 'unknown',
+          newDeviceId: deviceId,
+        });
         setDeviceBlocked(true);
         await supabase.auth.signOut();
         return false;
       }
 
       setDeviceBlocked(false);
+      setDeviceMismatchInfo(null);
       return true;
     } catch (err) {
       console.error('Device check error:', err);
@@ -253,12 +274,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     setDeviceBlocked(false);
+    setDeviceMismatchInfo(null);
     // Also sign out from native Google if on native platform
     if (isNativePlatform()) {
       await nativeGoogleSignOut();
     }
     await supabase.auth.signOut();
   };
+
+  const clearDeviceMismatch = useCallback(() => {
+    setDeviceMismatchInfo(null);
+    setDeviceBlocked(false);
+  }, []);
 
   const resetPassword = async (email: string) => {
     const redirectUrl = `${window.location.origin}/auth?mode=reset`;
@@ -277,7 +304,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, deviceBlocked, signUp, signIn, signInWithGoogle, signOut, resetPassword, updatePassword }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      deviceBlocked, 
+      deviceMismatchInfo,
+      signUp, 
+      signIn, 
+      signInWithGoogle, 
+      signOut, 
+      resetPassword, 
+      updatePassword,
+      clearDeviceMismatch,
+    }}>
       {children}
     </AuthContext.Provider>
   );
