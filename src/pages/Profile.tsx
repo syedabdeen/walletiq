@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { User, Mail, Lock, Loader2, LogOut, DollarSign } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { User, Mail, Lock, Loader2, LogOut, DollarSign, Phone } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 
 const passwordSchema = z.object({
@@ -24,9 +24,10 @@ export default function Profile() {
   const queryClient = useQueryClient();
   
   const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Fetch profile
@@ -43,28 +44,32 @@ export default function Profile() {
       if (error) throw error;
       if (data) {
         setFullName(data.full_name || '');
+        setPhoneNumber(data.phone_number || '');
       }
       return data;
     },
     enabled: !!user,
   });
 
-  const handleUpdateName = async (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !fullName.trim()) return;
+    if (!user) return;
 
-    setIsUpdatingName(true);
+    setIsUpdatingProfile(true);
     const { error } = await supabase
       .from('profiles')
-      .update({ full_name: fullName.trim() })
+      .update({ 
+        full_name: fullName.trim() || null,
+        phone_number: phoneNumber.trim() || null 
+      })
       .eq('user_id', user.id);
 
-    setIsUpdatingName(false);
+    setIsUpdatingProfile(false);
 
     if (error) {
-      toast.error('Failed to update name');
+      toast.error('Failed to update profile');
     } else {
-      toast.success('Name updated successfully');
+      toast.success('Profile updated successfully');
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     }
   };
@@ -106,10 +111,10 @@ export default function Profile() {
               <User className="w-5 h-5" />
               Account Information
             </CardTitle>
-            <CardDescription>Your account details</CardDescription>
+            <CardDescription>Your personal details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form onSubmit={handleUpdateName} className="space-y-4">
+            <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name</Label>
                 <Input
@@ -120,17 +125,30 @@ export default function Profile() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="phoneNumber"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="Enter your phone number"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
                 <Label>Email</Label>
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
                   <Mail className="w-4 h-4 text-muted-foreground" />
                   <span className="text-foreground">{user?.email}</span>
                 </div>
               </div>
-              <Button type="submit" disabled={isUpdatingName}>
-                {isUpdatingName ? (
+              <Button type="submit" disabled={isUpdatingProfile}>
+                {isUpdatingProfile ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  'Update Name'
+                  'Save Profile'
                 )}
               </Button>
             </form>

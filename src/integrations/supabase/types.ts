@@ -230,6 +230,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          phone_number: string | null
           updated_at: string
           user_id: string
         }
@@ -237,6 +238,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          phone_number?: string | null
           updated_at?: string
           user_id: string
         }
@@ -244,6 +246,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          phone_number?: string | null
           updated_at?: string
           user_id?: string
         }

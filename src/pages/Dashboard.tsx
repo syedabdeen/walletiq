@@ -13,6 +13,8 @@ import { useExpenses, useDeleteExpense, type Expense } from '@/hooks/useExpenses
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -23,6 +25,21 @@ export default function Dashboard() {
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // Fetch profile for personalized greeting
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);
@@ -38,9 +55,19 @@ export default function Dashboard() {
 
   const greeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    const name = profile?.full_name || user?.user_metadata?.full_name || '';
+    const firstName = name ? name.split(' ')[0] : '';
+    
+    let timeGreeting: string;
+    if (hour < 12) {
+      timeGreeting = 'Good morning';
+    } else if (hour < 17) {
+      timeGreeting = 'Good afternoon';
+    } else {
+      timeGreeting = 'Good evening';
+    }
+    
+    return firstName ? `${timeGreeting}, ${firstName}!` : `${timeGreeting}!`;
   };
 
   if (isLoading) {
@@ -72,7 +99,7 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground animate-fade-in">
-              {greeting()}! 👋
+              {greeting()} 👋
             </h1>
             <p className="text-muted-foreground">
               Here's your expense overview
