@@ -15,6 +15,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import walletiqLogo from '@/assets/walletiq-logo.png';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -35,8 +37,23 @@ export function Sidebar({ className }: SidebarProps) {
   const location = useLocation();
   const { user, signOut } = useAuth();
 
-  // Get display name from user metadata or email
-  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  // Fetch fresh profile name from database
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Prioritize profile name from DB, then user metadata, then email
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
   return (
     <aside className={cn('flex flex-col h-full bg-card border-r border-border', className)}>
