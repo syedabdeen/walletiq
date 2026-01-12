@@ -90,6 +90,12 @@ export function useUpdateSystemSetting() {
 }
 
 // User & Subscription Monitoring
+export interface UserDevice {
+  device_id: string;
+  registered_at: string;
+  last_seen_at: string;
+}
+
 export interface UserWithSubscription {
   id: string;
   email: string;
@@ -102,42 +108,50 @@ export interface UserWithSubscription {
     start_date: string;
     end_date: string;
   } | null;
+  device: UserDevice | null;
 }
 
 export function useAllUsersWithSubscriptions() {
   return useQuery({
     queryKey: ['admin-users-subscriptions'],
     queryFn: async () => {
-      // First get all profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, created_at');
+      // Fetch profiles, subscriptions, and devices in parallel
+      const [profilesResult, subscriptionsResult, devicesResult] = await Promise.all([
+        supabase.from('profiles').select('user_id, full_name, created_at'),
+        supabase.from('user_subscriptions').select('*').order('created_at', { ascending: false }),
+        supabase.from('user_devices').select('user_id, device_id, registered_at, last_seen_at'),
+      ]);
 
-      if (profilesError) throw profilesError;
+      if (profilesResult.error) throw profilesResult.error;
+      if (subscriptionsResult.error) throw subscriptionsResult.error;
+      if (devicesResult.error) throw devicesResult.error;
 
-      // Then get all subscriptions
-      const { data: subscriptions, error: subsError } = await supabase
-        .from('user_subscriptions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (subsError) throw subsError;
+      // Create a device map for quick lookup
+      const deviceMap = new Map<string, UserDevice>();
+      devicesResult.data?.forEach(device => {
+        deviceMap.set(device.user_id, {
+          device_id: device.device_id,
+          registered_at: device.registered_at,
+          last_seen_at: device.last_seen_at,
+        });
+      });
 
       // Combine the data
       const userMap = new Map<string, UserWithSubscription>();
       
-      profiles?.forEach(profile => {
+      profilesResult.data?.forEach(profile => {
         userMap.set(profile.user_id, {
           id: profile.user_id,
-          email: '', // Will be filled from subscription or left empty
+          email: '',
           created_at: profile.created_at,
           full_name: profile.full_name,
           subscription: null,
+          device: deviceMap.get(profile.user_id) || null,
         });
       });
 
       // Add subscription data (take the most recent one per user)
-      subscriptions?.forEach(sub => {
+      subscriptionsResult.data?.forEach(sub => {
         const existing = userMap.get(sub.user_id);
         if (existing && !existing.subscription) {
           existing.subscription = {
@@ -432,6 +446,29 @@ export function useDeleteUser() {
     },
     onError: (error) => {
       toast.error('Failed to delete user: ' + error.message);
+    },
+  });
+}
+
+// Reset user device (unwhitelist - allows login from new device)
+export function useResetUserDevice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from('user_devices')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users-subscriptions'] });
+      toast.success('Device lock reset - user can login from any device');
+    },
+    onError: (error) => {
+      toast.error('Failed to reset device: ' + error.message);
     },
   });
 }
