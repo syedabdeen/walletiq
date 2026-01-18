@@ -5,12 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useAllUsersWithSubscriptions, useActivateUserSubscription, useUpdateUserProfile, useDeleteUser, useResetUserDevice } from '@/hooks/useAdminData';
-import { Loader2, UserPlus, Pencil, Trash2, X, Check, ShieldOff, Smartphone } from 'lucide-react';
+import { useAllUsersWithSubscriptions, useActivateUserSubscription, useUpdateUserProfile, useDeleteUser, useResetUserDevice, useToggleUserWhitelist } from '@/hooks/useAdminData';
+import { Loader2, UserPlus, Pencil, Trash2, X, Check, ShieldOff, Smartphone, ShieldCheck, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { SubscriptionType } from '@/hooks/useSubscription';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function AdminUsers() {
   const { data: users, isLoading } = useAllUsersWithSubscriptions();
@@ -18,6 +20,7 @@ export default function AdminUsers() {
   const updateProfile = useUpdateUserProfile();
   const deleteUser = useDeleteUser();
   const resetDevice = useResetUserDevice();
+  const toggleWhitelist = useToggleUserWhitelist();
   
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionType>('monthly');
@@ -55,6 +58,10 @@ export default function AdminUsers() {
     }
   };
 
+  const handleToggleWhitelist = (userId: string, currentStatus: boolean) => {
+    toggleWhitelist.mutate({ userId, isWhitelisted: !currentStatus });
+  };
+
   if (isLoading) {
     return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></AdminLayout>;
   }
@@ -82,6 +89,7 @@ export default function AdminUsers() {
                   <TableHead className="text-slate-300">Amount</TableHead>
                   <TableHead className="text-slate-300">End Date</TableHead>
                   <TableHead className="text-slate-300">Device</TableHead>
+                  <TableHead className="text-slate-300">Whitelisted</TableHead>
                   <TableHead className="text-slate-300">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -133,6 +141,32 @@ export default function AdminUsers() {
                           None
                         </Badge>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-2">
+                              {user.is_whitelisted ? (
+                                <ShieldCheck className="w-4 h-4 text-green-400" />
+                              ) : (
+                                <Shield className="w-4 h-4 text-slate-500" />
+                              )}
+                              <Switch
+                                checked={user.is_whitelisted}
+                                onCheckedChange={() => handleToggleWhitelist(user.id, user.is_whitelisted)}
+                                disabled={toggleWhitelist.isPending}
+                                className="data-[state=checked]:bg-green-600"
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {user.is_whitelisted 
+                              ? 'User can login from any device without restrictions' 
+                              : 'User is restricted to registered device only'}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
