@@ -4,7 +4,7 @@ import { getDeviceIdAsync } from './useDeviceId';
 
 export interface DeviceCheckResult {
   allowed: boolean;
-  reason: 'device_registered' | 'device_matched' | 'device_mismatch' | 'super_admin_whitelisted' | 'test_user_whitelisted';
+  reason: 'device_registered' | 'device_matched' | 'device_mismatch' | 'super_admin_whitelisted' | 'test_user_whitelisted' | 'admin_whitelisted';
 }
 
 export interface DeviceMismatchInfo {

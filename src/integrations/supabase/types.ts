@@ -230,6 +230,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_whitelisted: boolean
           phone_number: string | null
           updated_at: string
           user_id: string
@@ -238,6 +239,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_whitelisted?: boolean
           phone_number?: string | null
           updated_at?: string
           user_id: string
@@ -246,6 +248,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_whitelisted?: boolean
           phone_number?: string | null
           updated_at?: string
           user_id?: string
@@ -570,10 +573,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_device_access: {
-        Args: { _device_id: string; _user_id: string }
-        Returns: Json
-      }
+      check_device_access:
+        | { Args: { _device_id: string; _user_id: string }; Returns: Json }
+        | { Args: { _device_id: string; _user_id: string }; Returns: Json }
       get_user_subscription: {
         Args: { _user_id: string }
         Returns: {

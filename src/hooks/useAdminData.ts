@@ -101,6 +101,7 @@ export interface UserWithSubscription {
   email: string;
   created_at: string;
   full_name: string | null;
+  is_whitelisted: boolean;
   subscription: {
     plan_type: SubscriptionType;
     status: SubscriptionStatus;
@@ -117,7 +118,7 @@ export function useAllUsersWithSubscriptions() {
     queryFn: async () => {
       // Fetch profiles, subscriptions, and devices in parallel
       const [profilesResult, subscriptionsResult, devicesResult] = await Promise.all([
-        supabase.from('profiles').select('user_id, full_name, created_at'),
+        supabase.from('profiles').select('user_id, full_name, created_at, is_whitelisted'),
         supabase.from('user_subscriptions').select('*').order('created_at', { ascending: false }),
         supabase.from('user_devices').select('user_id, device_id, registered_at, last_seen_at'),
       ]);
@@ -145,6 +146,7 @@ export function useAllUsersWithSubscriptions() {
           email: '',
           created_at: profile.created_at,
           full_name: profile.full_name,
+          is_whitelisted: profile.is_whitelisted ?? false,
           subscription: null,
           device: deviceMap.get(profile.user_id) || null,
         });
@@ -469,6 +471,32 @@ export function useResetUserDevice() {
     },
     onError: (error) => {
       toast.error('Failed to reset device: ' + error.message);
+    },
+  });
+}
+
+// Toggle user whitelist status (whitelisted users can login from any device)
+export function useToggleUserWhitelist() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, isWhitelisted }: { userId: string; isWhitelisted: boolean }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_whitelisted: isWhitelisted })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, { isWhitelisted }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users-subscriptions'] });
+      toast.success(isWhitelisted 
+        ? 'User whitelisted - can now login from any device' 
+        : 'User removed from whitelist - restricted to registered device'
+      );
+    },
+    onError: (error) => {
+      toast.error('Failed to update whitelist status: ' + error.message);
     },
   });
 }
